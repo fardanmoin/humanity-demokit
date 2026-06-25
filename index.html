@@ -87,18 +87,13 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 
 /* ── END SCREEN ── */
 #end-screen{display:none;background:#000}
-#end-screen.show{display:grid;grid-template-columns:1fr 1fr;height:100vh;overflow:hidden}
-.end-left{
-  padding:48px 44px;display:flex;flex-direction:column;justify-content:center;gap:18px;
-  border-right:1px solid #1a1a1a;overflow-y:auto;height:100%;
-}
-.end-right{
-  padding:48px 44px;display:flex;flex-direction:column;justify-content:center;align-items:center;
-  text-align:center;background:#050505;overflow-y:auto;height:100%;
-}
-.end-right-inner{
+#end-screen.show{display:flex;align-items:center;justify-content:center;height:100vh}
+.end-left{display:none}
+.end-right{display:none}
+.end-right-inner{display:none}
+.end-center{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  width:100%;max-width:360px;gap:16px;
+  text-align:center;width:100%;max-width:480px;padding:40px 24px;gap:20px;
 }
 .end-logo{margin-bottom:32px}
 .end-headline{font-size:26px;font-weight:700;color:#fff;line-height:1.2;margin-bottom:8px}
@@ -152,23 +147,32 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 
 /* Right side end screen */
 .end-check-icon{
-  width:56px;height:56px;border-radius:50%;
-  border:1.5px solid rgba(0,181,173,0.4);background:rgba(0,181,173,0.08);
+  width:80px;height:80px;border-radius:50%;
+  border:2px solid #00B5AD;background:rgba(0,181,173,0.1);
   display:flex;align-items:center;justify-content:center;margin:0 auto;flex-shrink:0;
+  animation:checkPop 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
 }
-.end-tour-done{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--teal);margin-bottom:6px;display:block}
-.end-right-headline{font-size:22px;font-weight:700;color:#fff;margin-bottom:6px;line-height:1.25;display:block}
-.end-right-sub{font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:0;line-height:1.6;display:block}
+@keyframes checkPop{
+  0%{transform:scale(0);opacity:0}
+  100%{transform:scale(1);opacity:1}
+}
+.end-tour-done{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--teal);display:block}
+.end-right-headline{font-size:28px;font-weight:700;color:#fff;line-height:1.2;display:block}
+.end-right-sub{font-size:14px;color:rgba(255,255,255,0.5);line-height:1.65;display:block;max-width:360px}
 .btn-book{
-  width:100%;padding:13px;border:none;border-radius:10px;
-  font-size:15px;font-weight:700;color:#fff;cursor:pointer;
-  background:var(--orange);letter-spacing:.2px;transition:filter .2s;display:block
+  width:100%;padding:16px;border:none;border-radius:12px;
+  font-size:16px;font-weight:700;color:#fff;cursor:pointer;
+  background:var(--orange);letter-spacing:.3px;transition:all 0.2s;display:block;
+  box-shadow:0 4px 24px rgba(255,107,53,0.4);
 }
+.btn-book:hover{filter:brightness(0.9);transform:translateY(-2px);box-shadow:0 8px 32px rgba(255,107,53,0.5)}
 .btn-book:hover{filter:brightness(.88)}
 .btn-restart{
-  font-size:12px;color:rgba(255,255,255,0.25);cursor:pointer;
-  text-decoration:underline;background:none;border:none;display:block;margin:0 auto
+  font-size:13px;color:rgba(255,255,255,0.3);cursor:pointer;
+  text-decoration:none;background:none;border:none;display:block;margin:0 auto;
+  transition:color 0.2s;
 }
+.btn-restart:hover{color:rgba(255,255,255,0.6)}
 
 /* ── ADMIN ── */
 #admin-view{flex-direction:column;background:var(--gbg);min-height:100vh}
@@ -485,21 +489,10 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 
 <!-- END SCREEN -->
 <div id="end-screen">
-  <div class="end-left">
-    <div class="end-logo" id="end-logo"></div>
-    <div>
-      <div class="end-headline">Book a slot<br>that works for you</div>
-      <div class="end-sub" id="end-sub">See how Humanity Schedule automates shift planning and gives your team real-time access from anywhere.</div>
-    </div>
-    <div id="end-bullets"></div>
-    <div id="end-bottom-left"></div>
-  </div>
-  <div class="end-right">
-    <div class="end-right-inner">
-      <div id="end-right-content"></div>
-      <button class="btn-book" id="btn-book" onclick="openCalendar()">Let's Book a Demo →</button>
-      <button class="btn-restart" onclick="restartDemo()">↩ Watch again</button>
-    </div>
+  <div class="end-center">
+    <div id="end-right-content"></div>
+    <button class="btn-book" id="btn-book" onclick="openCalendar()">Let's Book a Demo →</button>
+    <button class="btn-restart" onclick="restartDemo()">↩ Watch again</button>
   </div>
 </div>
 
@@ -961,68 +954,9 @@ function showEndScreen(){
   document.getElementById("player-view").style.display="none";
   const product=demoData.product||"humanity";
   const p=PRODUCTS[product]||PRODUCTS.humanity;
-  const p2=PRODUCTS[product]||PRODUCTS.humanity;
-  const shots=(demoData.app_screenshots&&demoData.app_screenshots.length)?demoData.app_screenshots:[];
   const calLink=demoData.calendar_link||"https://hello.tcpsoftware.com/c/aaron-josetcpsoftware-com";
-
-  // Logo
-  let logoHtml="";
-  if(p.name==="WhenToWork"){
-    logoHtml=`<div style="display:inline-block;border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 14px"><span style="font-size:22px;font-weight:700;color:#fff">WhenToWork</span><br><span style="font-size:11px;color:rgba(255,255,255,0.4)">Employee Scheduling</span></div>`;
-  } else {
-    logoHtml=`<div style="display:inline-block;border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 14px"><span style="font-size:22px;font-weight:700;color:#fff">${p.name}</span><span style="font-size:13px;font-weight:300;color:rgba(255,255,255,0.5);margin-left:5px">${p.sub}</span>${p.bytcp?'<br><span style="font-size:11px;color:#2563EB">by tcp™</span>':""}</div>`;
-  }
-  document.getElementById("end-logo").innerHTML=logoHtml;
-  document.getElementById("end-sub").textContent=p.sub_text;
-
-  // Bullets + what to expect section
-  const whatToExpect=`
-    <div style="background:#0d0d0d;border:1px solid #1f1f1f;border-radius:10px;padding:14px 16px;">
-      <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">What to expect in the demo</div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <div style="display:flex;align-items:center;gap:10px"><div style="width:28px;height:28px;border-radius:6px;background:#111;border:1px solid #1f1f1f;display:flex;align-items:center;justify-content:center;flex-shrink:0">🕐</div><div style="font-size:12px;color:rgba(255,255,255,0.55)"><strong style="color:#fff">20 minutes</strong> — no fluff, just the features that matter to you</div></div>
-        <div style="display:flex;align-items:center;gap:10px"><div style="width:28px;height:28px;border-radius:6px;background:#111;border:1px solid #1f1f1f;display:flex;align-items:center;justify-content:center;flex-shrink:0">🎯</div><div style="font-size:12px;color:rgba(255,255,255,0.55)"><strong style="color:#fff">Live walkthrough</strong> — with your actual team data, not a generic sandbox</div></div>
-        <div style="display:flex;align-items:center;gap:10px"><div style="width:28px;height:28px;border-radius:6px;background:#111;border:1px solid #1f1f1f;display:flex;align-items:center;justify-content:center;flex-shrink:0">💬</div><div style="font-size:12px;color:rgba(255,255,255,0.55)"><strong style="color:#fff">Q&A included</strong> — ask anything about pricing, setup, or onboarding</div></div>
-      </div>
-    </div>
-  `;
-  document.getElementById("end-bullets").innerHTML=p.bullets.map(b=>`
-    <div class="end-bullet"><div class="end-bdot"></div><div class="end-btext">${b}</div></div>
-  `).join("")+whatToExpect;
-
-  // Bottom left: host card + rating + store buttons
   const repName=demoData.rep_name||"Aaron Jose";
-  const repTitle=demoData.rep_title||"Senior Account Executive";
-  const blEl=document.getElementById("end-bottom-left");
-  const hostCard=`
-    <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#0d0d0d;border-radius:10px;border:1px solid #1f1f1f;margin-bottom:14px">
-      <div style="width:44px;height:44px;border-radius:50%;background:#00B5AD;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;font-weight:700;color:#fff">${repName.charAt(0)}</div>
-      <div>
-        <div style="font-size:14px;font-weight:700;color:#fff">${repName}</div>
-        <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px">${repTitle}</div>
-        <div style="font-size:11px;color:#00B5AD;margin-top:3px">● Available for a live demo</div>
-      </div>
-    </div>
-  `;
-  if(p.rating.show){
-    blEl.innerHTML=hostCard+`
-      <div class="end-rating-row">
-        <div style="text-align:center;padding-right:14px;border-right:1px solid #1f1f1f">
-          <div class="end-rating-num">${p.rating.num} <span class="end-rating-of">${p.rating.of}</span></div>
-          <div class="end-rating-label" style="margin-top:3px">${p.rating.label}</div>
-        </div>
-        <div>
-          <span class="end-stars">${p.rating.stars}</span>
-          <div class="end-rating-label">${p.rating.src}</div>
-        </div>
-      </div>
-      ${storeButtons(p)}
-    `;
-  } else {
-    blEl.innerHTML=hostCard+storeButtons(p);
-  }
 
-  // Right side: app screenshots or check icon
   const rrEl=document.getElementById("end-right-content");
   if(shots.length){
     currentAppShot=0;
@@ -1044,7 +978,7 @@ function showEndScreen(){
   } else {
     rrEl.innerHTML=`
       <div class="end-check-icon">
-        <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M5 14l7 7L23 7" stroke="#00B5AD" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><path d="M6 18l9 9L30 9" stroke="#00B5AD" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
       <div class="end-tour-done">Tour complete</div>
       <div class="end-right-headline">That's the full tour!</div>
@@ -1061,9 +995,7 @@ function showEndScreen(){
   }
 
   document.getElementById("btn-book").onclick=()=>window.open(calLink,"_blank");
-  const es=document.getElementById("end-screen");
-  es.style.height="100vh";
-  es.classList.add("show");
+  document.getElementById("end-screen").classList.add("show");
 }
 
 function goToShot(idx){
