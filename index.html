@@ -212,13 +212,21 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 .hotspot-coords{font-size:11px;color:var(--gtext);margin-top:2px}
 
 /* Slide list */
-.slide-item{display:flex;align-items:center;gap:16px;padding:14px;border:1px solid var(--gborder);border-radius:10px;margin-bottom:10px;background:#fff}
-.slide-thumb{width:100px;height:60px;object-fit:cover;border-radius:6px;flex-shrink:0;border:1px solid var(--gborder)}
-.slide-thumb.mobile-thumb{width:40px;height:60px;object-fit:cover;border-radius:8px}
-.slide-info{flex:1}
-.slide-info strong{font-size:14px;color:#000}
-.slide-info p{font-size:12px;color:var(--gtext);margin-top:2px}
-.slide-pos{font-size:24px;font-weight:800;color:var(--gborder);width:32px;text-align:center}
+.slide-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--gborder);border-radius:10px;margin-bottom:8px;background:#fff;transition:background .15s}
+.slide-item:hover{background:#fafafa}
+.slide-thumb{width:72px;height:44px;object-fit:cover;border-radius:5px;flex-shrink:0;border:1px solid var(--gborder)}
+.slide-thumb.mobile-thumb{width:30px;height:52px;object-fit:cover;border-radius:6px}
+.slide-info{flex:1;min-width:0}
+.slide-info strong{font-size:13px;color:#000;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slide-info p{font-size:11px;color:var(--gtext);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slide-pos{font-size:18px;font-weight:800;color:#ccc;width:24px;text-align:center;flex-shrink:0}
+.slide-type-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;margin-bottom:3px}
+.slide-type-badge.desktop{background:#f0f0f0;color:#555}
+.slide-type-badge.mobile{background:#e0f0ff;color:#2563EB}
+.slide-reorder{display:flex;flex-direction:column;gap:2px;flex-shrink:0}
+.reorder-btn{background:#f5f5f5;border:1px solid #e0e0e0;border-radius:4px;width:24px;height:22px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;color:#666;transition:all .15s}
+.reorder-btn:hover{background:#000;color:#fff;border-color:#000}
+.reorder-btn:disabled{opacity:.25;cursor:not-allowed}
 
 /* Demo list */
 .demo-item{display:flex;align-items:center;justify-content:space-between;padding:14px;border:1px solid var(--gborder);border-radius:10px;margin-bottom:10px;background:#fff}
@@ -659,22 +667,43 @@ async function loadSlidesForDemo(){
 function renderSlidesList(slides){
   const el=document.getElementById("slides-list");
   if(!slides.length){el.innerHTML='<p style="color:var(--gtext);font-size:13px">No slides yet.</p>';return}
-  el.innerHTML=slides.map((s,i)=>{
-    const isMobile=s.slide_type==="mobile";
-    return`<div class="slide-item">
-      <span class="slide-pos">${i+1}</span>
-      <img class="${isMobile?"mobile-thumb":"slide-thumb"}" src="${s.image_data}"/>
-      <div class="slide-info">
-        <strong>${isMobile?"📱 Mobile":"🖥 Desktop"} Slide ${i+1}</strong>
-        <p>${(s.hotspots||[]).length} hotspot${(s.hotspots||[]).length!==1?"s":""}: ${(s.hotspots||[]).map(h=>h.title).join(", ").substring(0,60)}</p>
-      </div>
-      <button class="btn-danger" onclick="deleteSlide(${s.id})">Remove</button>
-    </div>`
-  }).join("");
+  el.innerHTML=`
+    <p style="font-size:12px;color:var(--gtext);margin-bottom:10px">Use ↑ ↓ to reorder slides. Order here = order in the demo.</p>
+    ${slides.map((s,i)=>{
+      const isMobile=s.slide_type==="mobile";
+      const hotspotNames=(s.hotspots||[]).map(h=>h.title).join(", ")||"No hotspots";
+      return`<div class="slide-item" id="slide-row-${s.id}">
+        <span class="slide-pos">${i+1}</span>
+        <img class="${isMobile?"mobile-thumb":"slide-thumb"} slide-thumb" src="${s.image_data}"/>
+        <div class="slide-info">
+          <span class="slide-type-badge ${isMobile?"mobile":"desktop"}">${isMobile?"📱 Mobile":"🖥 Desktop"}</span>
+          <strong>Slide ${i+1}</strong>
+          <p>${(s.hotspots||[]).length} hotspot${(s.hotspots||[]).length!==1?"s":""} — ${hotspotNames.substring(0,50)}${hotspotNames.length>50?"...":""}</p>
+        </div>
+        <div class="slide-reorder">
+          <button class="reorder-btn" onclick="moveSlide(${i},-1,${JSON.stringify(slides.map(x=>x.id)).replace(/"/g,"'")})" ${i===0?"disabled":""}>↑</button>
+          <button class="reorder-btn" onclick="moveSlide(${i},1,${JSON.stringify(slides.map(x=>x.id)).replace(/"/g,"'")})" ${i===slides.length-1?"disabled":""}>↓</button>
+        </div>
+        <button class="btn-danger" onclick="deleteSlide(${s.id})">Remove</button>
+      </div>`
+    }).join("")}
+  `;
 }
 
 async function deleteSlide(id){
   await fetch(API+"/api/slides/"+id,{method:"DELETE"});
+  loadSlidesForDemo();
+}
+
+async function moveSlide(idx, dir, ids){
+  const newIdx = idx + dir;
+  if(newIdx < 0 || newIdx >= ids.length) return;
+  // Swap
+  const tmp = ids[idx]; ids[idx] = ids[newIdx]; ids[newIdx] = tmp;
+  await fetch(API+"/api/slides/reorder", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({demo_id: parseInt(currentDemoId), order: ids})
+  });
   loadSlidesForDemo();
 }
 
