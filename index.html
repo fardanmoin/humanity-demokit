@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Humanity Demo Player</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --teal: #00B5AD;
+    --teal-dark: #009990;
+    --navy: #1A2B4A;
+    --navy-light: #243860;
+    --orange: #FF6B35;
+    --white: #FFFFFF;
+    --gray-bg: #F5F7FA;
+    --gray-border: #E2E8F0;
+    --gray-text: #64748B;
+    --text: #1E293B;
+    --shadow: 0 4px 24px rgba(0,0,0,0.12);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.18);
+  }
+
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--gray-bg); color: var(--text); }
+
+  /* ── VIEWS ── */
+  .view { display: none; min-height: 100vh; }
+  .view.active { display: flex; }
+
+  /* ── PLAYER VIEW ── */
+  #player-view {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--navy);
+    padding: 20px;
+    position: relative;
+  }
+
+  .player-header {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    padding: 16px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(26,43,74,0.95);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    z-index: 10;
+  }
+
+  .player-logo {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .player-logo .logo-text {
+    font-size: 18px; font-weight: 700; color: var(--white);
+  }
+  .player-logo .logo-text span { color: var(--teal); }
+
+  .player-progress-wrap {
+    display: flex; align-items: center; gap: 12px; flex: 1; max-width: 400px; margin: 0 40px;
+  }
+  .progress-bar-bg {
+    flex: 1; height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%; background: var(--teal); border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+  .progress-label { font-size: 12px; color: rgba(255,255,255,0.5); white-space: nowrap; }
+
+  .player-stage {
+    margin-top: 72px;
+    position: relative;
+    width: 100%;
+    max-width: 1100px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    background: #000;
+  }
+
+  .player-stage img {
+    width: 100%;
+    display: block;
+    user-select: none;
+    pointer-events: none;
+  }
+
+  /* Hotspot */
+  .hotspot {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+    cursor: pointer;
+  }
+  .hotspot-ring {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: rgba(0,181,173,0.25);
+    border: 2.5px solid var(--teal);
+    display: flex; align-items: center; justify-content: center;
+    animation: pulse 1.8s ease-in-out infinite;
+    position: relative;
+  }
+  .hotspot-ring::before {
+    content: '';
+    position: absolute;
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    border: 2px solid var(--teal);
+    animation: ripple 1.8s ease-out infinite;
+  }
+  .hotspot-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--teal);
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0,181,173,0.4); }
+    50% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(0,181,173,0); }
+  }
+  @keyframes ripple {
+    0% { transform: scale(1); opacity: 0.6; }
+    100% { transform: scale(2.2); opacity: 0; }
+  }
+
+  /* Tooltip */
+  .tooltip-box {
+    position: absolute;
+    z-index: 20;
+    width: 300px;
+    background: var(--white);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    padding: 20px;
+    animation: tooltipIn 0.25s ease;
+    border-top: 3px solid var(--teal);
+  }
+  .tooltip-box.pos-right { left: calc(100% + 16px); top: 50%; transform: translateY(-50%); }
+  .tooltip-box.pos-left  { right: calc(100% + 16px); top: 50%; transform: translateY(-50%); }
+  .tooltip-box.pos-top   { bottom: calc(100% + 16px); left: 50%; transform: translateX(-50%); }
+  .tooltip-box.pos-bottom{ top: calc(100% + 16px); left: 50%; transform: translateX(-50%); }
+
+  @keyframes tooltipIn {
+    from { opacity: 0; transform: translateY(calc(-50% - 8px)); }
+    to   { opacity: 1; transform: translateY(-50%); }
+  }
+
+  .tooltip-step {
+    font-size: 11px; font-weight: 600; color: var(--teal);
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
+  }
+  .tooltip-title {
+    font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 8px; line-height: 1.3;
+  }
+  .tooltip-body {
+    font-size: 13px; color: var(--gray-text); line-height: 1.6; margin-bottom: 16px;
+  }
+  .tooltip-actions {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .btn-prev {
+    font-size: 13px; color: var(--gray-text); background: none; border: none; cursor: pointer;
+    padding: 6px 0;
+  }
+  .btn-prev:hover { color: var(--navy); }
+  .btn-next {
+    background: var(--teal); color: var(--white);
+    border: none; border-radius: 8px;
+    padding: 9px 20px; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .btn-next:hover { background: var(--teal-dark); }
+
+  /* End Screen */
+  #end-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: var(--navy);
+    text-align: center;
+    padding: 40px;
+  }
+  #end-screen.show { display: flex; }
+
+  .end-icon {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: rgba(0,181,173,0.15);
+    border: 2px solid var(--teal);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 28px;
+    font-size: 32px;
+  }
+  .end-title {
+    font-size: 32px; font-weight: 800; color: var(--white); margin-bottom: 12px;
+  }
+  .end-sub {
+    font-size: 16px; color: rgba(255,255,255,0.55); max-width: 440px;
+    line-height: 1.7; margin-bottom: 36px;
+  }
+  .btn-book {
+    background: var(--orange); color: var(--white);
+    border: none; border-radius: 10px;
+    padding: 16px 36px; font-size: 17px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+    text-decoration: none; display: inline-block;
+    box-shadow: 0 4px 20px rgba(255,107,53,0.4);
+  }
+  .btn-book:hover {
+    background: #e85d2a;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 28px rgba(255,107,53,0.5);
+  }
+  .btn-restart {
+    margin-top: 16px; font-size: 13px; color: rgba(255,255,255,0.35);
+    background: none; border: none; cursor: pointer; text-decoration: underline;
+  }
+  .btn-restart:hover { color: rgba(255,255,255,0.6); }
+
+  /* ── ADMIN VIEW ── */
+  #admin-view {
+    flex-direction: column;
+    background: var(--gray-bg);
+    min-height: 100vh;
+  }
+
+  .admin-nav {
+    background: var(--navy);
+    padding: 14px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .admin-nav-logo { font-size: 16px; font-weight: 700; color: var(--white); }
+  .admin-nav-logo span { color: var(--teal); }
+  .admin-badge {
+    font-size: 11px; background: var(--orange); color: var(--white);
+    padding: 3px 10px; border-radius: 20px; font-weight: 600;
+  }
+
+  .admin-body { padding: 32px; max-width: 1000px; margin: 0 auto; width: 100%; }
+
+  .admin-card {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 28px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    margin-bottom: 24px;
+  }
+  .admin-card h2 {
+    font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 20px;
+    padding-bottom: 12px; border-bottom: 1px solid var(--gray-border);
+  }
+
+  .form-row { margin-bottom: 16px; }
+  .form-row label {
+    display: block; font-size: 12px; font-weight: 600;
+    color: var(--gray-text); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px;
+  }
+  .form-row input, .form-row textarea, .form-row select {
+    width: 100%; padding: 10px 14px;
+    border: 1.5px solid var(--gray-border);
+    border-radius: 8px; font-size: 14px; color: var(--text);
+    background: var(--white); outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-row input:focus, .form-row textarea:focus, .form-row select:focus {
+    border-color: var(--teal);
+  }
+  .form-row textarea { resize: vertical; min-height: 80px; }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  .btn-primary {
+    background: var(--teal); color: var(--white);
+    border: none; border-radius: 8px;
+    padding: 11px 24px; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .btn-primary:hover { background: var(--teal-dark); }
+  .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+
+  .btn-danger {
+    background: #fee2e2; color: #dc2626;
+    border: none; border-radius: 6px;
+    padding: 6px 14px; font-size: 12px; font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* Image hotspot picker */
+  .image-picker-wrap {
+    position: relative; display: inline-block; cursor: crosshair;
+    border-radius: 8px; overflow: hidden;
+    border: 2px dashed var(--gray-border);
+    width: 100%; margin-top: 8px;
+  }
+  .image-picker-wrap img { width: 100%; display: block; }
+  .pick-dot {
+    position: absolute;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--teal);
+    border: 3px solid var(--white);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 5;
+  }
+  .pick-hint {
+    text-align: center; font-size: 12px; color: var(--gray-text); margin-top: 6px;
+  }
+
+  /* Slides list */
+  .slide-item {
+    display: flex; align-items: center; gap: 16px;
+    padding: 14px; border: 1px solid var(--gray-border);
+    border-radius: 10px; margin-bottom: 10px;
+    background: var(--white);
+  }
+  .slide-thumb {
+    width: 100px; height: 60px; object-fit: cover;
+    border-radius: 6px; flex-shrink: 0;
+    border: 1px solid var(--gray-border);
+  }
+  .slide-info { flex: 1; }
+  .slide-info strong { font-size: 14px; color: var(--navy); }
+  .slide-info p { font-size: 12px; color: var(--gray-text); margin-top: 2px; }
+  .slide-actions { display: flex; gap: 8px; align-items: center; }
+  .slide-pos { font-size: 24px; font-weight: 800; color: var(--gray-border); width: 32px; text-align: center; }
+
+  /* Demo list */
+  .demo-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px; border: 1px solid var(--gray-border);
+    border-radius: 10px; margin-bottom: 10px; background: var(--white);
+  }
+  .demo-item strong { font-size: 14px; color: var(--navy); }
+  .demo-item p { font-size: 12px; color: var(--gray-text); margin-top: 2px; }
+  .demo-link { font-size: 12px; color: var(--teal); text-decoration: none; }
+  .demo-link:hover { text-decoration: underline; }
+
+  .msg { padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-top: 10px; }
+  .msg.success { background: #d1fae5; color: #065f46; }
+  .msg.error   { background: #fee2e2; color: #991b1b; }
+
+  /* ── LOGIN VIEW ── */
+  #login-view {
+    flex-direction: column; align-items: center; justify-content: center;
+    background: var(--navy); min-height: 100vh;
+  }
+  .login-card {
+    background: var(--white); border-radius: 16px; padding: 40px;
+    width: 360px; box-shadow: var(--shadow-lg); text-align: center;
+  }
+  .login-card h1 { font-size: 22px; font-weight: 800; color: var(--navy); margin-bottom: 6px; }
+  .login-card p { font-size: 13px; color: var(--gray-text); margin-bottom: 28px; }
+  .login-card input {
+    width: 100%; padding: 12px 16px;
+    border: 1.5px solid var(--gray-border); border-radius: 8px;
+    font-size: 14px; outline: none; margin-bottom: 14px;
+    transition: border-color 0.2s;
+  }
+  .login-card input:focus { border-color: var(--teal); }
+  .login-card button {
+    width: 100%; padding: 13px;
+    background: var(--teal); color: var(--white);
+    border: none; border-radius: 8px;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+  .login-err { color: #dc2626; font-size: 13px; margin-top: 10px; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 24px; }
+  .tab {
+    padding: 9px 20px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: none; background: var(--gray-border); color: var(--gray-text);
+    transition: all 0.2s;
+  }
+  .tab.active { background: var(--teal); color: var(--white); }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Loading */
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: var(--white);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: inline-block; margin-right: 8px; vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 600px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .admin-body { padding: 16px; }
+    .tooltip-box { width: 240px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN VIEW -->
+<div class="view active" id="login-view">
+  <div class="login-card">
+    <h1>Demo Admin</h1>
+    <p>Enter your password to manage demos</p>
+    <input type="password" id="login-pass" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()" />
+    <button onclick="doLogin()">Sign In</button>
+    <p class="login-err" id="login-err"></p>
+  </div>
+</div>
+
+<!-- ADMIN VIEW -->
+<div class="view" id="admin-view">
+  <nav class="admin-nav">
+    <div class="admin-nav-logo">Humanity <span>DemoKit</span></div>
+    <span class="admin-badge">ADMIN</span>
+  </nav>
+  <div class="admin-body">
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('tab-demos')">My Demos</button>
+      <button class="tab" onclick="switchTab('tab-create')">Create Demo</button>
+      <button class="tab" onclick="switchTab('tab-slides')">Add Slides</button>
+    </div>
+
+    <!-- TAB: Demos List -->
+    <div class="tab-content active" id="tab-demos">
+      <div class="admin-card">
+        <h2>All Demos</h2>
+        <div id="demos-list"><p style="color:var(--gray-text);font-size:13px;">Loading...</p></div>
+      </div>
+    </div>
+
+    <!-- TAB: Create Demo -->
+    <div class="tab-content" id="tab-create">
+      <div class="admin-card">
+        <h2>Create New Demo</h2>
+        <div class="form-row">
+          <label>Demo Title</label>
+          <input type="text" id="new-title" placeholder="e.g. Humanity Schedule Overview" />
+        </div>
+        <div class="form-row">
+          <label>URL Slug (no spaces)</label>
+          <input type="text" id="new-slug" placeholder="e.g. humanity-schedule-overview" />
+        </div>
+        <div class="form-row">
+          <label>Description (optional)</label>
+          <textarea id="new-desc" placeholder="Short description shown to prospects..."></textarea>
+        </div>
+        <button class="btn-primary" onclick="createDemo()" id="btn-create-demo">Create Demo</button>
+        <div id="create-msg"></div>
+      </div>
+    </div>
+
+    <!-- TAB: Add Slides -->
+    <div class="tab-content" id="tab-slides">
+      <div class="admin-card">
+        <h2>Select Demo</h2>
+        <div class="form-row">
+          <label>Demo</label>
+          <select id="slide-demo-select" onchange="loadSlidesForDemo()">
+            <option value="">-- Select a demo --</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="admin-card" id="slide-form-card" style="display:none">
+        <h2>Add New Slide</h2>
+        <div class="form-row">
+          <label>Screenshot (PNG/JPG)</label>
+          <input type="file" id="slide-file" accept="image/*" onchange="previewImage()" />
+        </div>
+        <div id="img-picker-container" style="display:none">
+          <label style="font-size:12px;font-weight:600;color:var(--gray-text);text-transform:uppercase;letter-spacing:0.4px;">
+            Click on the screenshot to place the hotspot
+          </label>
+          <div class="image-picker-wrap" id="img-picker" onclick="pickHotspot(event)">
+            <img id="preview-img" src="" alt="preview" />
+            <div class="pick-dot" id="pick-dot" style="display:none"></div>
+          </div>
+          <p class="pick-hint">Click anywhere on the image to set where the pulsing hotspot appears</p>
+        </div>
+
+        <div class="form-grid" style="margin-top:16px">
+          <div class="form-row">
+            <label>Tooltip Title</label>
+            <input type="text" id="slide-title" placeholder="e.g. Your Morning Dashboard" />
+          </div>
+          <div class="form-row">
+            <label>Tooltip Position</label>
+            <select id="slide-tpos">
+              <option value="right">Right</option>
+              <option value="left">Left</option>
+              <option value="bottom">Bottom</option>
+              <option value="top">Top</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Tooltip Body</label>
+          <textarea id="slide-body" placeholder="Describe what the prospect is seeing here..."></textarea>
+        </div>
+        <button class="btn-primary" onclick="addSlide()" id="btn-add-slide">Add Slide</button>
+        <div id="slide-msg"></div>
+      </div>
+
+      <div class="admin-card" id="slides-list-card" style="display:none">
+        <h2>Slides in this Demo</h2>
+        <div id="slides-list"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- PLAYER VIEW -->
+<div class="view" id="player-view" style="display:none;flex-direction:column;align-items:center;justify-content:center;background:var(--navy);min-height:100vh;padding:20px;">
+
+  <div class="player-header">
+    <div class="player-logo">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <rect width="28" height="28" rx="6" fill="#00B5AD"/>
+        <path d="M7 14h14M14 7v14" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+      <span class="logo-text">Humanity <span>Schedule</span></span>
+    </div>
+    <div class="player-progress-wrap">
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="prog-fill" style="width:0%"></div></div>
+      <span class="progress-label" id="prog-label">1 of 1</span>
+    </div>
+    <div style="width:120px"></div>
+  </div>
+
+  <div class="player-stage" id="player-stage">
+    <img id="player-img" src="" alt="" />
+    <div class="hotspot" id="hotspot">
+      <div class="hotspot-ring">
+        <div class="hotspot-dot"></div>
+      </div>
+      <div class="tooltip-box pos-right" id="tooltip-box">
+        <div class="tooltip-step" id="tooltip-step">Step 1</div>
+        <div class="tooltip-title" id="tooltip-title"></div>
+        <div class="tooltip-body" id="tooltip-body"></div>
+        <div class="tooltip-actions">
+          <button class="btn-prev" id="btn-prev" onclick="prevSlide()">← Back</button>
+          <button class="btn-next" onclick="nextSlide()">Next →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- END SCREEN -->
+<div id="end-screen">
+  <div class="end-icon">🎉</div>
+  <div class="end-title">That's the full tour!</div>
+  <div class="end-sub">Ready to see this live for your team? Book a personalized demo with Aaron and get started.</div>
+  <a class="btn-book" href="https://hello.tcpsoftware.com/c/aaron-josetcpsoftware-com" target="_blank">
+    Let's Book a Demo
+  </a>
+  <button class="btn-restart" onclick="restartDemo()">↩ Watch again</button>
+</div>
+
+<script>
+const API = window.location.origin;
+const ADMIN_PASSWORD = "tcp2024admin";
+const ADMIN_PATH = "/manage-xk92";
+let demoData = null;
+let currentSlide = 0;
+let hotspotX = 50, hotspotY = 50;
+let currentDemoId = null;
+
+// ── ROUTING ──
+function route() {
+  const path = window.location.pathname;
+  if (path === ADMIN_PATH) {
+    showView("login-view");
+  } else if (path.startsWith("/share/")) {
+    const slug = path.replace("/share/", "");
+    loadDemo(slug);
+  } else {
+    // Default: redirect to a share link or show admin login
+    showView("login-view");
+  }
+}
+
+function showView(id) {
+  document.querySelectorAll(".view").forEach(v => { v.style.display = "none"; v.classList.remove("active"); });
+  document.getElementById("end-screen").classList.remove("show");
+  const el = document.getElementById(id);
+  if (el) { el.style.display = "flex"; el.classList.add("active"); }
+}
+
+// ── LOGIN ──
+function doLogin() {
+  const val = document.getElementById("login-pass").value;
+  if (val === ADMIN_PASSWORD) {
+    showView("admin-view");
+    loadDemosList();
+    populateDemoSelect();
+  } else {
+    document.getElementById("login-err").textContent = "Incorrect password.";
+  }
+}
+
+// ── TABS ──
+function switchTab(id) {
+  document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  event.target.classList.add("active");
+  if (id === "tab-demos") loadDemosList();
+  if (id === "tab-slides") populateDemoSelect();
+}
+
+// ── DEMOS LIST ──
+async function loadDemosList() {
+  const res = await fetch(API + "/api/demos");
+  const demos = await res.json();
+  const el = document.getElementById("demos-list");
+  if (!demos.length) { el.innerHTML = '<p style="color:var(--gray-text);font-size:13px;">No demos yet. Create one first.</p>'; return; }
+  el.innerHTML = demos.map(d => `
+    <div class="demo-item">
+      <div>
+        <strong>${d.title}</strong>
+        <p>${d.description || "No description"}</p>
+        <a class="demo-link" href="/share/${d.slug}" target="_blank">/share/${d.slug}</a>
+      </div>
+      <button class="btn-danger" onclick="deleteDemo('${d.slug}')">Delete</button>
+    </div>
+  `).join("");
+}
+
+async function deleteDemo(slug) {
+  if (!confirm("Delete this demo and all its slides?")) return;
+  await fetch(API + "/api/demos/" + slug, { method: "DELETE" });
+  loadDemosList();
+}
+
+// ── CREATE DEMO ──
+async function createDemo() {
+  const title = document.getElementById("new-title").value.trim();
+  const slug = document.getElementById("new-slug").value.trim().toLowerCase().replace(/\s+/g,"-");
+  const desc = document.getElementById("new-desc").value.trim();
+  if (!title || !slug) { showMsg("create-msg", "Title and slug are required.", "error"); return; }
+  const btn = document.getElementById("btn-create-demo");
+  btn.innerHTML = '<span class="spinner"></span>Creating...'; btn.disabled = true;
+  const res = await fetch(API + "/api/demos", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ slug, title, description: desc })
+  });
+  btn.innerHTML = "Create Demo"; btn.disabled = false;
+  if (res.ok) {
+    showMsg("create-msg", "Demo created! Go to Add Slides tab to add screenshots.", "success");
+    document.getElementById("new-title").value = "";
+    document.getElementById("new-slug").value = "";
+    document.getElementById("new-desc").value = "";
+  } else {
+    const err = await res.json();
+    showMsg("create-msg", err.detail || "Error creating demo.", "error");
+  }
+}
+
+// ── SLIDES ──
+async function populateDemoSelect() {
+  const res = await fetch(API + "/api/demos");
+  const demos = await res.json();
+  const sel = document.getElementById("slide-demo-select");
+  sel.innerHTML = '<option value="">-- Select a demo --</option>' +
+    demos.map(d => `<option value="${d.id}" data-slug="${d.slug}">${d.title}</option>`).join("");
+}
+
+async function loadSlidesForDemo() {
+  const sel = document.getElementById("slide-demo-select");
+  currentDemoId = sel.value;
+  if (!currentDemoId) return;
+  document.getElementById("slide-form-card").style.display = "block";
+  document.getElementById("slides-list-card").style.display = "block";
+  const slug = sel.options[sel.selectedIndex].dataset.slug;
+  const res = await fetch(API + "/api/demos/" + slug);
+  const demo = await res.json();
+  renderSlidesList(demo.slides || []);
+}
+
+function renderSlidesList(slides) {
+  const el = document.getElementById("slides-list");
+  if (!slides.length) { el.innerHTML = '<p style="color:var(--gray-text);font-size:13px;">No slides yet.</p>'; return; }
+  el.innerHTML = slides.map((s, i) => `
+    <div class="slide-item">
+      <span class="slide-pos">${i+1}</span>
+      <img class="slide-thumb" src="${s.image_data}" />
+      <div class="slide-info">
+        <strong>${s.tooltip_title}</strong>
+        <p>${s.tooltip_body.substring(0,80)}${s.tooltip_body.length>80?"...":""}</p>
+      </div>
+      <div class="slide-actions">
+        <button class="btn-danger" onclick="deleteSlide(${s.id})">Remove</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+async function deleteSlide(id) {
+  await fetch(API + "/api/slides/" + id, { method: "DELETE" });
+  loadSlidesForDemo();
+}
+
+// Image preview + hotspot picker
+function previewImage() {
+  const file = document.getElementById("slide-file").files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById("preview-img").src = e.target.result;
+    document.getElementById("img-picker-container").style.display = "block";
+    document.getElementById("pick-dot").style.display = "none";
+    hotspotX = 50; hotspotY = 50;
+  };
+  reader.readAsDataURL(file);
+}
+
+function pickHotspot(e) {
+  const wrap = document.getElementById("img-picker");
+  const rect = wrap.getBoundingClientRect();
+  hotspotX = ((e.clientX - rect.left) / rect.width) * 100;
+  hotspotY = ((e.clientY - rect.top) / rect.height) * 100;
+  const dot = document.getElementById("pick-dot");
+  dot.style.display = "block";
+  dot.style.left = hotspotX + "%";
+  dot.style.top = hotspotY + "%";
+}
+
+async function addSlide() {
+  if (!currentDemoId) { showMsg("slide-msg", "Select a demo first.", "error"); return; }
+  const file = document.getElementById("slide-file").files[0];
+  const title = document.getElementById("slide-title").value.trim();
+  const body = document.getElementById("slide-body").value.trim();
+  const tpos = document.getElementById("slide-tpos").value;
+  if (!file || !title || !body) { showMsg("slide-msg", "Screenshot, title and body are required.", "error"); return; }
+
+  const btn = document.getElementById("btn-add-slide");
+  btn.innerHTML = '<span class="spinner"></span>Uploading...'; btn.disabled = true;
+
+  // Get current slide count for position
+  const selEl = document.getElementById("slide-demo-select");
+  const slug = selEl.options[selEl.selectedIndex].dataset.slug;
+  const dRes = await fetch(API + "/api/demos/" + slug);
+  const demo = await dRes.json();
+  const position = (demo.slides || []).length + 1;
+
+  const fd = new FormData();
+  fd.append("demo_id", currentDemoId);
+  fd.append("position", position);
+  fd.append("hotspot_x", hotspotX);
+  fd.append("hotspot_y", hotspotY);
+  fd.append("tooltip_title", title);
+  fd.append("tooltip_body", body);
+  fd.append("tooltip_position", tpos);
+  fd.append("file", file);
+
+  const res = await fetch(API + "/api/slides?" + new URLSearchParams({
+    demo_id: currentDemoId, position, hotspot_x: hotspotX, hotspot_y: hotspotY,
+    tooltip_title: title, tooltip_body: body, tooltip_position: tpos
+  }), { method: "POST", body: fd });
+
+  btn.innerHTML = "Add Slide"; btn.disabled = false;
+
+  if (res.ok) {
+    showMsg("slide-msg", "Slide added!", "success");
+    document.getElementById("slide-file").value = "";
+    document.getElementById("slide-title").value = "";
+    document.getElementById("slide-body").value = "";
+    document.getElementById("img-picker-container").style.display = "none";
+    loadSlidesForDemo();
+  } else {
+    showMsg("slide-msg", "Upload failed. Try again.", "error");
+  }
+}
+
+// ── PLAYER ──
+async function loadDemo(slug) {
+  try {
+    const res = await fetch(API + "/api/demos/" + slug);
+    if (!res.ok) { document.body.innerHTML = '<div style="color:white;display:flex;align-items:center;justify-content:center;height:100vh;font-size:20px;background:#1A2B4A;">Demo not found.</div>'; return; }
+    demoData = await res.json();
+    if (!demoData.slides || !demoData.slides.length) {
+      document.body.innerHTML = '<div style="color:white;display:flex;align-items:center;justify-content:center;height:100vh;font-size:20px;background:#1A2B4A;">No slides in this demo yet.</div>'; return;
+    }
+    currentSlide = 0;
+    showView("player-view");
+    renderSlide();
+  } catch(e) {
+    document.body.innerHTML = '<div style="color:white;display:flex;align-items:center;justify-content:center;height:100vh;font-size:20px;background:#1A2B4A;">Failed to load demo.</div>';
+  }
+}
+
+function renderSlide() {
+  if (!demoData) return;
+  const slides = demoData.slides;
+  const s = slides[currentSlide];
+  const total = slides.length;
+
+  document.getElementById("player-img").src = s.image_data;
+  document.getElementById("hotspot").style.left = s.hotspot_x + "%";
+  document.getElementById("hotspot").style.top = s.hotspot_y + "%";
+
+  const tb = document.getElementById("tooltip-box");
+  tb.className = "tooltip-box pos-" + s.tooltip_position;
+
+  document.getElementById("tooltip-step").textContent = "Step " + (currentSlide + 1) + " of " + total;
+  document.getElementById("tooltip-title").textContent = s.tooltip_title;
+  document.getElementById("tooltip-body").textContent = s.tooltip_body;
+
+  document.getElementById("btn-prev").style.visibility = currentSlide === 0 ? "hidden" : "visible";
+
+  const fill = ((currentSlide + 1) / total) * 100;
+  document.getElementById("prog-fill").style.width = fill + "%";
+  document.getElementById("prog-label").textContent = (currentSlide + 1) + " of " + total;
+}
+
+function nextSlide() {
+  const slides = demoData.slides;
+  if (currentSlide < slides.length - 1) {
+    currentSlide++;
+    renderSlide();
+  } else {
+    showEndScreen();
+  }
+}
+
+function prevSlide() {
+  if (currentSlide > 0) { currentSlide--; renderSlide(); }
+}
+
+function showEndScreen() {
+  document.getElementById("player-view").style.display = "none";
+  document.getElementById("end-screen").classList.add("show");
+}
+
+function restartDemo() {
+  currentSlide = 0;
+  document.getElementById("end-screen").classList.remove("show");
+  showView("player-view");
+  renderSlide();
+}
+
+// ── UTILS ──
+function showMsg(id, text, type) {
+  const el = document.getElementById(id);
+  el.innerHTML = `<div class="msg ${type}">${text}</div>`;
+  setTimeout(() => el.innerHTML = "", 4000);
+}
+
+// ── INIT ──
+route();
+</script>
+</body>
+</html>
