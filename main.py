@@ -31,11 +31,11 @@ def get_conn():
 def init_db():
     conn = get_conn()
     cur = conn.cursor()
+    # Create base tables
     cur.execute("""
         CREATE TABLE IF NOT EXISTS demos (
             id SERIAL PRIMARY KEY,
             slug TEXT UNIQUE NOT NULL,
-            product TEXT NOT NULL DEFAULT 'humanity',
             title TEXT NOT NULL,
             description TEXT,
             created_at TIMESTAMP DEFAULT NOW()
@@ -44,11 +44,22 @@ def init_db():
             id SERIAL PRIMARY KEY,
             demo_id INTEGER REFERENCES demos(id) ON DELETE CASCADE,
             position INTEGER NOT NULL,
-            image_data TEXT NOT NULL,
-            hotspots JSONB NOT NULL DEFAULT '[]'
+            image_data TEXT NOT NULL
         );
     """)
     conn.commit()
+    # Run migrations safely
+    migrations = [
+        "ALTER TABLE demos ADD COLUMN IF NOT EXISTS product TEXT NOT NULL DEFAULT 'humanity'",
+        "ALTER TABLE slides ADD COLUMN IF NOT EXISTS hotspots JSONB NOT NULL DEFAULT '[]'",
+    ]
+    for m in migrations:
+        try:
+            cur.execute(m)
+            conn.commit()
+        except Exception as e:
+            print(f"Migration skipped: {e}")
+            conn.rollback()
     cur.close()
     conn.close()
 
@@ -217,6 +228,52 @@ def delete_demo(slug: str):
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 INDEX = os.path.join(HERE, "index.html")
+
+
+@app.get("/api/debug")
+def debug():
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
+
+        # Check demos table columns
+        cur.execute("""
+            SELECT column_name, data_type
+            FROM information_schema.columns
+            WHERE table_name = 'demos'
+            ORDER BY ordinal_position
+        """)
+        demos_cols = [dict(r) for r in cur.fetchall()]
+
+        # Check slides table columns
+        cur.execute("""
+            SELECT column_name, data_type
+            FROM information_schema.columns
+            WHERE table_name = 'slides'
+            ORDER BY ordinal_position
+        """)
+        slides_cols = [dict(r) for r in cur.fetchall()]
+
+        # Count rows
+        cur.execute("SELECT COUNT(*) as cnt FROM demos")
+        demo_count = cur.fetchone()["cnt"]
+
+        cur.execute("SELECT COUNT(*) as cnt FROM slides")
+        slide_count = cur.fetchone()["cnt"]
+
+        cur.close()
+        conn.close()
+
+        return {
+            "status": "ok",
+            "pil_available": HAS_PIL,
+            "demos_table_columns": demos_cols,
+            "slides_table_columns": slides_cols,
+            "demo_count": demo_count,
+            "slide_count": slide_count,
+        }
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
 
 @app.get("/share/{slug}")
 def serve_share(slug: str):
