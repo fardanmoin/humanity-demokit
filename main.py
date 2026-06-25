@@ -47,6 +47,8 @@ def init_db():
         "ALTER TABLE demos ADD COLUMN IF NOT EXISTS app_screenshots JSONB NOT NULL DEFAULT '[]'",
         "ALTER TABLE slides ADD COLUMN IF NOT EXISTS hotspots JSONB NOT NULL DEFAULT '[]'",
         "ALTER TABLE slides ADD COLUMN IF NOT EXISTS slide_type TEXT NOT NULL DEFAULT 'desktop'",
+        "ALTER TABLE demos ADD COLUMN IF NOT EXISTS rep_name TEXT NOT NULL DEFAULT 'Aaron Jose'",
+        "ALTER TABLE demos ADD COLUMN IF NOT EXISTS rep_title TEXT NOT NULL DEFAULT 'Senior Account Executive'",
     ]
     for m in migrations:
         try:
@@ -93,6 +95,8 @@ class DemoCreate(BaseModel):
     title: str
     description: Optional[str] = ""
     calendar_link: Optional[str] = "https://hello.tcpsoftware.com/c/aaron-josetcpsoftware-com"
+    rep_name: Optional[str] = "Aaron Jose"
+    rep_title: Optional[str] = "Senior Account Executive"
 
 class Hotspot(BaseModel):
     x: float
@@ -127,9 +131,10 @@ def create_demo(demo: DemoCreate):
     cur = conn.cursor()
     try:
         cur.execute(
-            "INSERT INTO demos (slug, title, description, product, calendar_link) VALUES (%s,%s,%s,%s,%s) RETURNING *",
+            "INSERT INTO demos (slug, title, description, product, calendar_link, rep_name, rep_title) VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING *",
             (demo.slug, demo.title, demo.description, demo.product or "humanity",
-             demo.calendar_link or "https://hello.tcpsoftware.com/c/aaron-josetcpsoftware-com")
+             demo.calendar_link or "https://hello.tcpsoftware.com/c/aaron-josetcpsoftware-com",
+             demo.rep_name or "Aaron Jose", demo.rep_title or "Senior Account Executive")
         )
         row = dict(cur.fetchone())
         conn.commit()
