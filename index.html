@@ -1,217 +1,273 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Demo Player</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  :root {
-    --teal: #00B5AD; --teal-dark: #009990; --navy: #1A2B4A;
-    --orange: #FF6B35; --white: #FFFFFF; --gray-bg: #F5F7FA;
-    --gray-border: #E2E8F0; --gray-text: #64748B; --text: #1E293B;
-    --shadow-lg: 0 8px 40px rgba(0,0,0,0.18);
-  }
-  html, body { height: 100%; font-family: 'Segoe UI', system-ui, sans-serif; background: var(--gray-bg); color: var(--text); }
-  .view { display: none; }
-  .view.active { display: flex; }
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --teal:#00B5AD;--navy:#1A2B4A;--orange:#FF6B35;
+  --white:#fff;--gbg:#F5F7FA;--gborder:#E2E8F0;--gtext:#64748B;--text:#1E293B;
+}
+html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var(--gbg);color:var(--text)}
+.view{display:none}
+.view.active{display:flex}
 
-  /* ── PLAYER ── */
-  #player-view { flex-direction: column; width: 100vw; min-height: 100vh; }
-  .player-header {
-    position: fixed; top: 0; left: 0; right: 0; height: 54px; padding: 0 28px;
-    display: flex; align-items: center; justify-content: space-between;
-    backdrop-filter: blur(10px); z-index: 1000;
-  }
+/* ── PLAYER ── */
+#player-view{flex-direction:column;width:100vw;min-height:100vh;background:#000}
+.player-header{
+  position:fixed;top:0;left:0;right:0;height:52px;padding:0 28px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(0,0,0,0.96);border-bottom:1px solid #1a1a1a;z-index:1000;
+}
+.logo-text-wrap{display:flex;flex-direction:column;line-height:1}
+.logo-main{font-size:15px;font-weight:700;color:#fff;letter-spacing:-0.2px}
+.logo-main span{font-weight:300;color:rgba(255,255,255,0.5);font-size:13px;margin-left:3px}
+.logo-bytcp{font-size:10px;color:#2563EB;margin-top:1px}
+.player-progress-wrap{display:flex;align-items:center;gap:12px;flex:1;max-width:500px;margin:0 32px}
+.progress-bar-bg{flex:1;height:2px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden}
+.progress-bar-fill{height:100%;background:var(--teal);border-radius:2px;transition:width 0.4s ease}
+.progress-label{font-size:11px;color:rgba(255,255,255,0.35);white-space:nowrap}
+.player-scroll-area{margin-top:52px;position:relative;width:100%}
+#player-img{display:block;width:100%;height:auto;user-select:none;pointer-events:none}
 
-  /* Humanity header */
-  .theme-humanity .player-header { background: rgba(15,26,46,0.97); border-bottom: 1px solid rgba(0,181,173,0.25); }
-  /* Humanity Time header */
-  .theme-humanity-time .player-header { background: rgba(30,15,60,0.97); border-bottom: 1px solid rgba(124,58,237,0.35); }
-  /* WhenToWork header */
-  .theme-whentowork .player-header { background: rgba(10,24,52,0.97); border-bottom: 1px solid rgba(37,99,235,0.35); }
+/* Hotspot */
+.hotspot{position:absolute;transform:translate(-50%,-50%);z-index:50}
+.hotspot-ring{
+  width:36px;height:36px;border-radius:50%;
+  background:rgba(0,181,173,0.15);border:2px solid var(--teal);
+  display:flex;align-items:center;justify-content:center;
+  animation:pulse 1.8s ease-in-out infinite;position:relative;cursor:pointer
+}
+.hotspot-ring::before{
+  content:'';position:absolute;width:100%;height:100%;
+  border-radius:50%;border:2px solid var(--teal);animation:ripple 1.8s ease-out infinite
+}
+.hotspot-dot{width:10px;height:10px;border-radius:50%;background:var(--teal)}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,181,173,0.4)}50%{box-shadow:0 0 0 8px rgba(0,181,173,0)}}
+@keyframes ripple{0%{transform:scale(1);opacity:.6}100%{transform:scale(2.2);opacity:0}}
 
-  .player-logo { display: flex; align-items: center; gap: 10px; }
-  .logo-text { font-size: 16px; font-weight: 700; color: var(--white); line-height: 1.1; }
-  .logo-sub  { font-size: 10px; color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: 0.5px; }
+/* Tooltip */
+.tooltip-box{
+  position:absolute;z-index:100;width:290px;
+  background:#111;border-radius:12px;
+  box-shadow:0 8px 40px rgba(0,0,0,0.6);padding:18px;
+  border:1px solid #222;border-top:2px solid var(--teal);
+}
+.tooltip-box.pos-right{left:32px;top:50%;transform:translateY(-50%)}
+.tooltip-box.pos-left{right:32px;top:50%;transform:translateY(-50%)}
+.tooltip-box.pos-bottom{top:32px;left:50%;transform:translateX(-50%)}
+.tooltip-box.pos-top{bottom:32px;left:50%;transform:translateX(-50%)}
+.tooltip-step{font-size:10px;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}
+.tooltip-title{font-size:14px;font-weight:700;color:#fff;margin-bottom:7px;line-height:1.3}
+.tooltip-body{font-size:12px;color:rgba(255,255,255,0.55);line-height:1.6;margin-bottom:14px}
+.tooltip-actions{display:flex;align-items:center;justify-content:space-between}
+.btn-prev{font-size:12px;color:rgba(255,255,255,0.35);background:none;border:none;cursor:pointer;padding:5px 0}
+.btn-prev:hover{color:#fff}
+.btn-next{background:var(--teal);color:#fff;border:none;border-radius:7px;padding:8px 18px;font-size:12px;font-weight:600;cursor:pointer;transition:filter .2s}
+.btn-next:hover{filter:brightness(.85)}
 
-  .player-progress-wrap { display: flex; align-items: center; gap: 12px; flex: 1; max-width: 500px; margin: 0 32px; }
-  .progress-bar-bg { flex: 1; height: 3px; background: rgba(255,255,255,0.12); border-radius: 2px; overflow: hidden; }
-  .progress-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
-  .theme-humanity      .progress-bar-fill { background: #00B5AD; }
-  .theme-humanity-time .progress-bar-fill { background: #7C3AED; }
-  .theme-whentowork    .progress-bar-fill { background: #2563EB; }
-  .progress-label { font-size: 11px; color: rgba(255,255,255,0.45); white-space: nowrap; }
+/* Mobile slide frame */
+.mobile-frame-wrap{
+  display:flex;align-items:center;justify-content:center;
+  min-height:calc(100vh - 52px);background:#000;padding:40px 20px;
+}
+.phone-frame{
+  width:320px;border-radius:40px;background:#111;
+  border:8px solid #222;box-shadow:0 0 0 1px #333,0 30px 80px rgba(0,0,0,0.8);
+  position:relative;overflow:hidden;
+}
+.phone-notch{
+  position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:100px;height:28px;background:#111;border-radius:0 0 18px 18px;z-index:10;
+}
+.phone-screen{width:100%;display:block;border-radius:34px}
+.mobile-hotspot-overlay{position:absolute;top:0;left:0;right:0;bottom:0}
 
-  .player-scroll-area { margin-top: 54px; position: relative; width: 100%; }
-  #player-img { display: block; width: 100%; height: auto; user-select: none; pointer-events: none; }
+/* ── END SCREEN ── */
+#end-screen{display:none;background:#000;min-height:100vh}
+#end-screen.show{display:grid;grid-template-columns:1fr 1fr}
+.end-left{
+  padding:52px 48px;display:flex;flex-direction:column;justify-content:space-between;
+  border-right:1px solid #1a1a1a;
+}
+.end-right{
+  padding:52px 48px;display:flex;flex-direction:column;justify-content:center;align-items:center;
+  text-align:center;background:#050505;
+}
+.end-logo{margin-bottom:32px}
+.end-headline{font-size:32px;font-weight:700;color:#fff;line-height:1.2;margin-bottom:12px}
+.end-sub{font-size:14px;color:rgba(255,255,255,0.4);line-height:1.7;margin-bottom:28px}
+.end-bullet{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.end-bdot{width:5px;height:5px;border-radius:50%;background:var(--teal);flex-shrink:0;margin-top:6px}
+.end-btext{font-size:13px;color:rgba(255,255,255,0.6);line-height:1.5}
+.end-rating-row{
+  display:flex;align-items:center;gap:16px;
+  padding:14px 16px;background:#0d0d0d;border-radius:10px;
+  border:1px solid #1f1f1f;margin-top:24px;
+}
+.end-rating-num{font-size:28px;font-weight:700;color:#fff;line-height:1}
+.end-rating-of{font-size:13px;color:rgba(255,255,255,0.3)}
+.end-stars{font-size:15px;color:#F59E0B;letter-spacing:1px;display:block;line-height:1;margin-bottom:3px}
+.end-rating-label{font-size:11px;color:rgba(255,255,255,0.3)}
+.store-row{display:flex;gap:10px;margin-top:16px}
+.store-btn{
+  flex:1;display:flex;align-items:center;gap:9px;padding:11px 13px;
+  border:1px solid #1f1f1f;border-radius:9px;cursor:pointer;
+  text-decoration:none;background:#0d0d0d;transition:border-color .15s
+}
+.store-btn:hover{border-color:#444}
+.store-sub{font-size:9px;color:rgba(255,255,255,0.3);line-height:1}
+.store-name{font-size:12px;font-weight:700;color:#fff;line-height:1.4}
 
-  /* Hotspot */
-  .hotspot { position: absolute; transform: translate(-50%, -50%); z-index: 50; }
-  .hotspot-ring {
-    width: 38px; height: 38px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    animation: pulse 1.8s ease-in-out infinite; position: relative; cursor: pointer;
-  }
-  .theme-humanity      .hotspot-ring { background: rgba(0,181,173,0.2);  border: 2.5px solid #00B5AD; }
-  .theme-humanity-time .hotspot-ring { background: rgba(124,58,237,0.2); border: 2.5px solid #7C3AED; }
-  .theme-whentowork    .hotspot-ring { background: rgba(37,99,235,0.2);  border: 2.5px solid #2563EB; }
-  .hotspot-ring::before {
-    content: ''; position: absolute; width: 100%; height: 100%;
-    border-radius: 50%; animation: ripple 1.8s ease-out infinite;
-  }
-  .theme-humanity      .hotspot-ring::before { border: 2px solid #00B5AD; }
-  .theme-humanity-time .hotspot-ring::before { border: 2px solid #7C3AED; }
-  .theme-whentowork    .hotspot-ring::before { border: 2px solid #2563EB; }
-  .hotspot-dot { width: 11px; height: 11px; border-radius: 50%; }
-  .theme-humanity      .hotspot-dot { background: #00B5AD; }
-  .theme-humanity-time .hotspot-dot { background: #7C3AED; }
-  .theme-whentowork    .hotspot-dot { background: #2563EB; }
+/* App screenshot slideshow */
+.app-slideshow{
+  width:260px;position:relative;margin-bottom:28px;
+}
+.phone-slide-frame{
+  width:100%;border-radius:32px;background:#111;
+  border:6px solid #1f1f1f;box-shadow:0 0 0 1px #2a2a2a,0 20px 60px rgba(0,0,0,0.7);
+  overflow:hidden;position:relative;
+}
+.phone-slide-notch{
+  position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:80px;height:22px;background:#111;border-radius:0 0 14px 14px;z-index:5;
+}
+.app-slide-img{
+  width:100%;display:block;
+  animation:slideIn .5s ease;
+}
+@keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.slide-dots{display:flex;gap:6px;justify-content:center;margin-top:12px}
+.slide-dot{
+  width:6px;height:6px;border-radius:50%;background:#333;
+  cursor:pointer;transition:background .2s;border:none;padding:0
+}
+.slide-dot.on{background:var(--teal);width:18px;border-radius:3px}
 
-  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(0,181,173,0.4); } 50% { box-shadow: 0 0 0 9px rgba(0,181,173,0); } }
-  @keyframes ripple { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(2.4); opacity: 0; } }
+/* Right side end screen */
+.end-check-icon{
+  width:64px;height:64px;border-radius:50%;
+  border:1.5px solid rgba(0,181,173,0.4);background:rgba(0,181,173,0.08);
+  display:flex;align-items:center;justify-content:center;margin-bottom:18px;
+}
+.end-tour-done{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--teal);margin-bottom:10px}
+.end-right-headline{font-size:24px;font-weight:700;color:#fff;margin-bottom:8px;line-height:1.25}
+.end-right-sub{font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:28px;line-height:1.65;max-width:270px}
+.btn-book{
+  width:100%;padding:14px;border:none;border-radius:10px;
+  font-size:15px;font-weight:700;color:#fff;cursor:pointer;
+  background:var(--orange);margin-bottom:10px;letter-spacing:.2px;transition:filter .2s
+}
+.btn-book:hover{filter:brightness(.88)}
+.btn-restart{
+  font-size:12px;color:rgba(255,255,255,0.25);cursor:pointer;
+  text-decoration:underline;background:none;border:none
+}
 
-  /* Tooltip */
-  .tooltip-box {
-    position: absolute; z-index: 100; width: 300px;
-    background: var(--white); border-radius: 12px;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.22); padding: 20px;
-  }
-  .theme-humanity      .tooltip-box { border-top: 3px solid #00B5AD; }
-  .theme-humanity-time .tooltip-box { border-top: 3px solid #7C3AED; }
-  .theme-whentowork    .tooltip-box { border-top: 3px solid #2563EB; }
-  .tooltip-box.pos-right  { left: 28px;   top: 50%; transform: translateY(-50%); }
-  .tooltip-box.pos-left   { right: 28px;  top: 50%; transform: translateY(-50%); }
-  .tooltip-box.pos-bottom { top: 28px;    left: 50%; transform: translateX(-50%); }
-  .tooltip-box.pos-top    { bottom: 28px; left: 50%; transform: translateX(-50%); }
-  .tooltip-step  { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
-  .theme-humanity      .tooltip-step { color: #00B5AD; }
-  .theme-humanity-time .tooltip-step { color: #7C3AED; }
-  .theme-whentowork    .tooltip-step { color: #2563EB; }
-  .tooltip-title { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 8px; line-height: 1.35; }
-  .tooltip-body  { font-size: 13px; color: var(--gray-text); line-height: 1.6; margin-bottom: 16px; }
-  .tooltip-actions { display: flex; align-items: center; justify-content: space-between; }
-  .btn-prev { font-size: 13px; color: var(--gray-text); background: none; border: none; cursor: pointer; padding: 6px 0; }
-  .btn-prev:hover { color: var(--navy); }
-  .btn-next { color: var(--white); border: none; border-radius: 8px; padding: 9px 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: filter 0.2s; }
-  .btn-next:hover { filter: brightness(0.9); }
-  .theme-humanity      .btn-next { background: #00B5AD; }
-  .theme-humanity-time .btn-next { background: #7C3AED; }
-  .theme-whentowork    .btn-next { background: #2563EB; }
+/* ── ADMIN ── */
+#admin-view{flex-direction:column;background:var(--gbg);min-height:100vh}
+.admin-nav{background:#000;padding:14px 32px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1a1a1a}
+.admin-nav-logo{font-size:16px;font-weight:700;color:#fff}
+.admin-nav-logo span{color:var(--teal)}
+.admin-badge{font-size:11px;background:var(--orange);color:#fff;padding:3px 10px;border-radius:20px;font-weight:600}
+.admin-body{padding:32px;max-width:1000px;margin:0 auto;width:100%}
+.admin-card{background:#fff;border-radius:12px;padding:28px;box-shadow:0 2px 12px rgba(0,0,0,0.06);margin-bottom:24px}
+.admin-card h2{font-size:16px;font-weight:700;color:#000;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--gborder)}
+.form-row{margin-bottom:16px}
+.form-row label{display:block;font-size:12px;font-weight:600;color:var(--gtext);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px}
+.form-row input,.form-row textarea,.form-row select{
+  width:100%;padding:10px 14px;border:1.5px solid var(--gborder);
+  border-radius:8px;font-size:14px;color:var(--text);background:#fff;
+  outline:none;transition:border-color .2s
+}
+.form-row input:focus,.form-row textarea:focus,.form-row select:focus{border-color:#000}
+.form-row textarea{resize:vertical;min-height:70px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.btn-primary{background:#000;color:#fff;border:none;border-radius:8px;padding:11px 24px;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .2s}
+.btn-primary:hover{opacity:.8}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.btn-danger{background:#fee2e2;color:#dc2626;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer}
+.btn-secondary{background:var(--gbg);color:#000;border:1.5px solid var(--gborder);border-radius:8px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer}
 
-  /* END SCREEN */
-  #end-screen { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 40px; }
-  #end-screen.show { display: flex; }
-  .theme-humanity      #end-screen, .theme-humanity      ~ #end-screen { background: #1A2B4A; }
-  .theme-humanity-time #end-screen, .theme-humanity-time ~ #end-screen { background: #1e0f3c; }
-  .theme-whentowork    #end-screen, .theme-whentowork    ~ #end-screen { background: #0a1834; }
-  #end-screen { background: #1A2B4A; }
-  .end-icon { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 28px; font-size: 32px; }
-  .end-title { font-size: 32px; font-weight: 800; color: var(--white); margin-bottom: 12px; }
-  .end-sub   { font-size: 16px; color: rgba(255,255,255,0.55); max-width: 440px; line-height: 1.7; margin-bottom: 36px; }
-  .btn-book  { background: var(--orange); color: var(--white); border: none; border-radius: 10px; padding: 16px 36px; font-size: 17px; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-block; box-shadow: 0 4px 20px rgba(255,107,53,0.4); transition: all 0.2s; }
-  .btn-book:hover { background: #e85d2a; transform: translateY(-2px); }
-  .btn-restart { margin-top: 16px; font-size: 13px; color: rgba(255,255,255,0.35); background: none; border: none; cursor: pointer; text-decoration: underline; }
+/* Product picker */
+.product-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:4px}
+.product-card{border:2px solid var(--gborder);border-radius:10px;padding:16px 12px;cursor:pointer;text-align:center;transition:all .15s;background:#fff}
+.product-card.selected{border-color:#000;background:#fafafa}
+.product-logo-box{width:40px;height:40px;border-radius:10px;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;background:#000}
+.product-card-name{font-size:13px;font-weight:700;color:#000}
+.product-card-desc{font-size:11px;color:var(--gtext);margin-top:3px}
 
-  /* ADMIN */
-  #admin-view { flex-direction: column; background: var(--gray-bg); min-height: 100vh; }
-  .admin-nav { background: var(--navy); padding: 14px 32px; display: flex; align-items: center; justify-content: space-between; }
-  .admin-nav-logo { font-size: 16px; font-weight: 700; color: var(--white); }
-  .admin-nav-logo span { color: var(--teal); }
-  .admin-badge { font-size: 11px; background: var(--orange); color: var(--white); padding: 3px 10px; border-radius: 20px; font-weight: 600; }
-  .admin-body { padding: 32px; max-width: 1000px; margin: 0 auto; width: 100%; }
-  .admin-card { background: var(--white); border-radius: 12px; padding: 28px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); margin-bottom: 24px; }
-  .admin-card h2 { font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--gray-border); }
-  .form-row { margin-bottom: 16px; }
-  .form-row label { display: block; font-size: 12px; font-weight: 600; color: var(--gray-text); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px; }
-  .form-row input, .form-row textarea, .form-row select { width: 100%; padding: 10px 14px; border: 1.5px solid var(--gray-border); border-radius: 8px; font-size: 14px; color: var(--text); background: var(--white); outline: none; transition: border-color 0.2s; }
-  .form-row input:focus, .form-row textarea:focus, .form-row select:focus { border-color: var(--teal); }
-  .form-row textarea { resize: vertical; min-height: 70px; }
-  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+/* Image hotspot picker */
+.image-picker-wrap{position:relative;cursor:crosshair;border-radius:8px;overflow:hidden;border:2px dashed var(--gborder);width:100%;margin-top:8px;display:block}
+.image-picker-wrap img{width:100%;display:block;pointer-events:none}
+.pick-dot{position:absolute;width:24px;height:24px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.4);transform:translate(-50%,-50%);pointer-events:none;z-index:5;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff}
+.pick-hint{text-align:center;font-size:12px;color:var(--gtext);margin-top:6px}
 
-  /* Product picker cards */
-  .product-picker { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 4px; }
-  .product-card {
-    border: 2px solid var(--gray-border); border-radius: 10px; padding: 16px 12px;
-    cursor: pointer; text-align: center; transition: all 0.18s; background: var(--white);
-  }
-  .product-card:hover { border-color: #aaa; transform: translateY(-1px); }
-  .product-card.selected { box-shadow: 0 0 0 3px rgba(0,0,0,0.08); transform: translateY(-1px); }
-  .product-card.selected.p-humanity      { border-color: #00B5AD; background: #f0fffe; }
-  .product-card.selected.p-humanity-time { border-color: #7C3AED; background: #f5f0ff; }
-  .product-card.selected.p-whentowork    { border-color: #2563EB; background: #eff6ff; }
-  .product-logo-box { width: 44px; height: 44px; border-radius: 10px; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; }
-  .p-humanity      .product-logo-box { background: #00B5AD; }
-  .p-humanity-time .product-logo-box { background: #7C3AED; }
-  .p-whentowork    .product-logo-box { background: #2563EB; }
-  .product-card-name { font-size: 13px; font-weight: 700; color: var(--navy); }
-  .product-card-desc { font-size: 11px; color: var(--gray-text); margin-top: 3px; }
+/* Hotspot builder */
+.hotspot-entry{border:1.5px solid var(--gborder);border-radius:10px;padding:14px;margin-bottom:10px;background:var(--gbg)}
+.hotspot-entry-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.hotspot-entry-num{font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;background:#f0f0f0;color:#000}
+.hotspot-coords{font-size:11px;color:var(--gtext);margin-top:2px}
 
-  .btn-primary { background: var(--teal); color: var(--white); border: none; border-radius: 8px; padding: 11px 24px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-  .btn-primary:hover { background: var(--teal-dark); }
-  .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
-  .btn-danger { background: #fee2e2; color: #dc2626; border: none; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; }
-  .btn-secondary { background: var(--gray-bg); color: var(--navy); border: 1.5px solid var(--gray-border); border-radius: 8px; padding: 9px 18px; font-size: 13px; font-weight: 600; cursor: pointer; }
-  .btn-secondary:hover { background: var(--gray-border); }
+/* Slide list */
+.slide-item{display:flex;align-items:center;gap:16px;padding:14px;border:1px solid var(--gborder);border-radius:10px;margin-bottom:10px;background:#fff}
+.slide-thumb{width:100px;height:60px;object-fit:cover;border-radius:6px;flex-shrink:0;border:1px solid var(--gborder)}
+.slide-thumb.mobile-thumb{width:40px;height:60px;object-fit:cover;border-radius:8px}
+.slide-info{flex:1}
+.slide-info strong{font-size:14px;color:#000}
+.slide-info p{font-size:12px;color:var(--gtext);margin-top:2px}
+.slide-pos{font-size:24px;font-weight:800;color:var(--gborder);width:32px;text-align:center}
 
-  .image-picker-wrap { position: relative; cursor: crosshair; border-radius: 8px; overflow: hidden; border: 2px dashed var(--gray-border); width: 100%; margin-top: 8px; display: block; }
-  .image-picker-wrap img { width: 100%; display: block; pointer-events: none; }
-  .pick-dot { position: absolute; width: 26px; height: 26px; border-radius: 50%; border: 3px solid var(--white); box-shadow: 0 2px 8px rgba(0,0,0,0.35); transform: translate(-50%, -50%); pointer-events: none; z-index: 5; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: white; }
-  .pick-hint { text-align: center; font-size: 12px; color: var(--gray-text); margin-top: 6px; }
+/* Demo list */
+.demo-item{display:flex;align-items:center;justify-content:space-between;padding:14px;border:1px solid var(--gborder);border-radius:10px;margin-bottom:10px;background:#fff}
+.demo-link{font-size:12px;color:var(--teal);text-decoration:none}
+.demo-link:hover{text-decoration:underline}
+.demo-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:#f0f0f0;color:#000;margin-right:8px}
 
-  .hotspot-builder { margin-top: 16px; }
-  .hotspot-builder-title { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
-  .hotspot-entry { border: 1.5px solid var(--gray-border); border-radius: 10px; padding: 14px; margin-bottom: 10px; background: var(--gray-bg); }
-  .hotspot-entry-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-  .hotspot-entry-num { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
-  .hotspot-coords { font-size: 11px; color: var(--gray-text); margin-top: 4px; }
+/* App screenshots admin */
+.app-shot-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:10px;margin-top:10px}
+.app-shot-item{position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--gborder)}
+.app-shot-item img{width:100%;display:block}
+.app-shot-del{position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.7);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 
-  .slide-item { display: flex; align-items: center; gap: 16px; padding: 14px; border: 1px solid var(--gray-border); border-radius: 10px; margin-bottom: 10px; background: var(--white); }
-  .slide-thumb { width: 100px; height: 60px; object-fit: cover; border-radius: 6px; flex-shrink: 0; border: 1px solid var(--gray-border); }
-  .slide-info { flex: 1; }
-  .slide-info strong { font-size: 14px; color: var(--navy); }
-  .slide-info p { font-size: 12px; color: var(--gray-text); margin-top: 2px; }
-  .slide-pos { font-size: 24px; font-weight: 800; color: var(--gray-border); width: 32px; text-align: center; }
+/* Slide type toggle */
+.slide-type-toggle{display:flex;gap:8px;margin-bottom:16px}
+.stt-btn{flex:1;padding:10px;border:2px solid var(--gborder);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;background:#fff;color:var(--gtext);transition:all .15s;text-align:center}
+.stt-btn.active{border-color:#000;background:#000;color:#fff}
 
-  .demo-item { display: flex; align-items: center; justify-content: space-between; padding: 14px; border: 1px solid var(--gray-border); border-radius: 10px; margin-bottom: 10px; background: var(--white); }
-  .demo-item-left strong { font-size: 14px; color: var(--navy); }
-  .demo-item-left p { font-size: 12px; color: var(--gray-text); margin-top: 2px; }
-  .demo-link { font-size: 12px; color: var(--teal); text-decoration: none; }
-  .demo-link:hover { text-decoration: underline; }
-  .demo-product-badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; margin-right: 8px; }
-  .badge-humanity      { background: #e0fffe; color: #00B5AD; }
-  .badge-humanity-time { background: #f0e8ff; color: #7C3AED; }
-  .badge-whentowork    { background: #dbeafe; color: #2563EB; }
+.msg{padding:10px 14px;border-radius:8px;font-size:13px;margin-top:10px}
+.msg.success{background:#d1fae5;color:#065f46}
+.msg.error{background:#fee2e2;color:#991b1b}
 
-  .msg { padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-top: 10px; }
-  .msg.success { background: #d1fae5; color: #065f46; }
-  .msg.error   { background: #fee2e2; color: #991b1b; }
+.tabs{display:flex;gap:4px;margin-bottom:24px}
+.tab{padding:9px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:var(--gborder);color:var(--gtext);transition:all .2s}
+.tab.active{background:#000;color:#fff}
+.tab-content{display:none}
+.tab-content.active{display:block}
 
-  .tabs { display: flex; gap: 4px; margin-bottom: 24px; }
-  .tab { padding: 9px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; background: var(--gray-border); color: var(--gray-text); transition: all 0.2s; }
-  .tab.active { background: var(--teal); color: var(--white); }
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
+/* Login */
+#login-view{flex-direction:column;align-items:center;justify-content:center;background:#000;min-height:100vh}
+.login-card{background:#111;border:1px solid #222;border-radius:16px;padding:40px;width:360px;text-align:center}
+.login-card h1{font-size:22px;font-weight:700;color:#fff;margin-bottom:6px}
+.login-card p{font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:28px}
+.login-card input{width:100%;padding:12px 16px;border:1.5px solid #222;border-radius:8px;font-size:14px;outline:none;margin-bottom:14px;background:#1a1a1a;color:#fff}
+.login-card input:focus{border-color:var(--teal)}
+.login-card button{width:100%;padding:13px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer}
+.login-err{color:#f87171;font-size:13px;margin-top:10px}
 
-  #login-view { flex-direction: column; align-items: center; justify-content: center; background: var(--navy); min-height: 100vh; }
-  .login-card { background: var(--white); border-radius: 16px; padding: 40px; width: 360px; box-shadow: var(--shadow-lg); text-align: center; }
-  .login-card h1 { font-size: 22px; font-weight: 800; color: var(--navy); margin-bottom: 6px; }
-  .login-card p { font-size: 13px; color: var(--gray-text); margin-bottom: 28px; }
-  .login-card input { width: 100%; padding: 12px 16px; border: 1.5px solid var(--gray-border); border-radius: 8px; font-size: 14px; outline: none; margin-bottom: 14px; }
-  .login-card input:focus { border-color: var(--teal); }
-  .login-card button { width: 100%; padding: 13px; background: var(--teal); color: var(--white); border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; }
-  .login-err { color: #dc2626; font-size: 13px; margin-top: 10px; }
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;margin-right:6px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-  .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: var(--white); border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; margin-right: 8px; vertical-align: middle; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  @media (max-width: 640px) {
-    .form-grid { grid-template-columns: 1fr; }
-    .product-picker { grid-template-columns: 1fr; }
-    .admin-body { padding: 16px; }
-    .tooltip-box { width: 220px; }
-    .player-progress-wrap { max-width: 180px; margin: 0 12px; }
-  }
+@media(max-width:640px){
+  .form-grid{grid-template-columns:1fr}
+  .product-picker{grid-template-columns:1fr}
+  .admin-body{padding:16px}
+  .tooltip-box{width:220px}
+  #end-screen.show{grid-template-columns:1fr;grid-template-rows:auto auto}
+  .end-left,.end-right{padding:32px 24px}
+}
 </style>
 </head>
 <body>
@@ -221,7 +277,7 @@
   <div class="login-card">
     <h1>Demo Admin</h1>
     <p>Enter your password to manage demos</p>
-    <input type="password" id="login-pass" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()" />
+    <input type="password" id="login-pass" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()"/>
     <button onclick="doLogin()">Sign In</button>
     <p class="login-err" id="login-err"></p>
   </div>
@@ -244,57 +300,47 @@
     <div class="tab-content active" id="tab-demos">
       <div class="admin-card">
         <h2>All Demos</h2>
-        <div id="demos-list"><p style="color:var(--gray-text);font-size:13px;">Loading...</p></div>
+        <div id="demos-list"><p style="color:var(--gtext);font-size:13px">Loading...</p></div>
       </div>
     </div>
 
-    <!-- CREATE DEMO -->
+    <!-- CREATE -->
     <div class="tab-content" id="tab-create">
       <div class="admin-card">
         <h2>Create New Demo</h2>
-
         <div class="form-row">
           <label>Product</label>
           <div class="product-picker">
-            <div class="product-card p-humanity selected" id="pc-humanity" onclick="selectProduct('humanity')">
+            <div class="product-card selected" id="pc-humanity" onclick="selectProduct('humanity')">
               <div class="product-logo-box">
-                <!-- Humanity icon -->
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="8" r="4" fill="white"/>
-                  <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="white" stroke-width="2" stroke-linecap="round"/>
-                </svg>
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="7" r="4" fill="white"/><path d="M3 21c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
               </div>
               <div class="product-card-name">Humanity</div>
-              <div class="product-card-desc">Scheduling</div>
+              <div class="product-card-desc">Schedule</div>
             </div>
-            <div class="product-card p-humanity-time" id="pc-humanity-time" onclick="selectProduct('humanity-time')">
+            <div class="product-card" id="pc-humanity-time" onclick="selectProduct('humanity-time')">
               <div class="product-logo-box">
-                <!-- Clock icon -->
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="9" stroke="white" stroke-width="2"/>
-                  <path d="M12 7v5l3 3" stroke="white" stroke-width="2" stroke-linecap="round"/>
-                </svg>
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8" stroke="white" stroke-width="2"/><path d="M11 6v5l3 3" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
               </div>
               <div class="product-card-name">Humanity Time</div>
               <div class="product-card-desc">Time Tracking</div>
             </div>
-            <div class="product-card p-whentowork" id="pc-whentowork" onclick="selectProduct('whentowork')">
+            <div class="product-card" id="pc-whentowork" onclick="selectProduct('whentowork')">
               <div class="product-logo-box">
-                <!-- Calendar icon -->
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <rect x="3" y="4" width="18" height="17" rx="2" stroke="white" stroke-width="2"/>
-                  <path d="M3 9h18M8 2v4M16 2v4" stroke="white" stroke-width="2" stroke-linecap="round"/>
-                </svg>
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="2" y="4" width="18" height="16" rx="2" stroke="white" stroke-width="2"/><path d="M2 9h18M7 2v4M15 2v4" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
               </div>
               <div class="product-card-name">WhenToWork</div>
               <div class="product-card-desc">Scheduling</div>
             </div>
           </div>
         </div>
-
-        <div class="form-row"><label>Demo Title</label><input type="text" id="new-title" placeholder="e.g. Humanity Schedule Overview" /></div>
-        <div class="form-row"><label>URL Slug (no spaces)</label><input type="text" id="new-slug" placeholder="e.g. humanity-schedule-overview" /></div>
+        <div class="form-row"><label>Demo Title</label><input type="text" id="new-title" placeholder="e.g. Humanity Schedule Overview"/></div>
+        <div class="form-row"><label>URL Slug (no spaces)</label><input type="text" id="new-slug" placeholder="e.g. humanity-schedule-overview"/></div>
         <div class="form-row"><label>Description (optional)</label><textarea id="new-desc" placeholder="Short description..."></textarea></div>
+        <div class="form-row">
+          <label>Your Calendar / Booking Link</label>
+          <input type="url" id="new-cal" placeholder="https://hello.tcpsoftware.com/c/your-link" value="https://hello.tcpsoftware.com/c/aaron-josetcpsoftware-com"/>
+        </div>
         <button class="btn-primary" onclick="createDemo()" id="btn-create-demo">Create Demo</button>
         <div id="create-msg"></div>
       </div>
@@ -312,27 +358,50 @@
         </div>
       </div>
 
-      <div class="admin-card" id="slide-form-card" style="display:none">
-        <h2>Add New Slide</h2>
-        <div class="form-row"><label>Step 1 — Upload Screenshot (PNG/JPG)</label><input type="file" id="slide-file" accept="image/*" onchange="previewImage()" /></div>
-        <div id="img-picker-container" style="display:none">
-          <label style="font-size:12px;font-weight:600;color:var(--navy);display:block;margin-bottom:6px;">Step 2 — Click on the screenshot to place hotspots</label>
-          <div class="image-picker-wrap" id="img-picker" onclick="addHotspotAtClick(event)">
-            <img id="preview-img" src="" alt="preview" />
+      <div id="slide-form-card" style="display:none">
+        <!-- Slide type toggle -->
+        <div class="admin-card">
+          <h2>Add New Slide</h2>
+          <div class="slide-type-toggle">
+            <div class="stt-btn active" id="stt-desktop" onclick="setSlideType('desktop')">🖥 Desktop Screenshot</div>
+            <div class="stt-btn" id="stt-mobile" onclick="setSlideType('mobile')">📱 Mobile App Screenshot</div>
           </div>
-          <p class="pick-hint">Click anywhere on the image to add a hotspot. Add as many as you want.</p>
-          <div class="hotspot-builder" id="hotspot-builder">
-            <div class="hotspot-builder-title">
-              <span>Step 3 — Fill in tooltip details for each hotspot</span>
-              <button class="btn-secondary" onclick="clearAllHotspots()">Clear All</button>
+
+          <div class="form-row"><label id="slide-file-label">Desktop Screenshot (PNG/JPG)</label><input type="file" id="slide-file" accept="image/*" onchange="previewImage()"/></div>
+
+          <div id="img-picker-container" style="display:none">
+            <label style="font-size:12px;font-weight:600;color:#000;display:block;margin-bottom:6px">Click on the screenshot to place hotspots</label>
+            <div class="image-picker-wrap" id="img-picker" onclick="addHotspotAtClick(event)">
+              <img id="preview-img" src="" alt="preview"/>
             </div>
-            <div id="hotspot-entries"></div>
+            <p class="pick-hint">Click anywhere to add a hotspot. Add as many as you want.</p>
+            <div style="margin-top:16px">
+              <div style="font-size:13px;font-weight:700;color:#000;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+                <span>Hotspot tooltip details</span>
+                <button class="btn-secondary" onclick="clearAllHotspots()" style="font-size:12px;padding:6px 12px">Clear All</button>
+              </div>
+              <div id="hotspot-entries"></div>
+            </div>
           </div>
+
+          <div style="margin-top:16px">
+            <button class="btn-primary" onclick="addSlide()" id="btn-add-slide" style="display:none">Add Slide</button>
+          </div>
+          <div id="slide-msg"></div>
         </div>
-        <div style="margin-top:16px">
-          <button class="btn-primary" onclick="addSlide()" id="btn-add-slide" style="display:none">Add Slide</button>
+
+        <!-- Mobile app screenshots for end screen -->
+        <div class="admin-card" id="app-shots-card">
+          <h2>📱 App Screenshots (shown on end screen)</h2>
+          <p style="font-size:13px;color:var(--gtext);margin-bottom:14px">These appear as a slideshow on the end screen. Upload phone screenshots — white backgrounds will be kept as-is inside the phone frame.</p>
+          <div class="form-row">
+            <label>Upload App Screenshot</label>
+            <input type="file" id="app-shot-file" accept="image/*"/>
+          </div>
+          <button class="btn-primary" onclick="uploadAppShot()" id="btn-app-shot">Upload Screenshot</button>
+          <div id="app-shot-msg"></div>
+          <div class="app-shot-grid" id="app-shot-grid"></div>
         </div>
-        <div id="slide-msg"></div>
       </div>
 
       <div class="admin-card" id="slides-list-card" style="display:none">
@@ -346,17 +415,16 @@
 <!-- PLAYER -->
 <div class="view" id="player-view">
   <div class="player-header">
-    <div class="player-logo" id="player-logo-area">
-      <!-- rendered by JS based on product -->
-    </div>
+    <div class="player-logo" id="player-logo-area"></div>
     <div class="player-progress-wrap">
       <div class="progress-bar-bg"><div class="progress-bar-fill" id="prog-fill" style="width:0%"></div></div>
       <span class="progress-label" id="prog-label">1 of 1</span>
     </div>
-    <div style="width:100px"></div>
+    <div style="width:80px"></div>
   </div>
-  <div class="player-scroll-area" id="player-scroll-area">
-    <img id="player-img" src="" alt="" />
+  <!-- Desktop slide -->
+  <div class="player-scroll-area" id="player-scroll-area" style="display:none">
+    <img id="player-img" src="" alt=""/>
     <div class="hotspot" id="hotspot">
       <div class="hotspot-ring"><div class="hotspot-dot"></div></div>
       <div class="tooltip-box pos-right" id="tooltip-box">
@@ -370,448 +438,595 @@
       </div>
     </div>
   </div>
+  <!-- Mobile slide -->
+  <div class="mobile-frame-wrap" id="mobile-frame-wrap" style="display:none">
+    <div class="phone-frame" id="phone-frame">
+      <div class="phone-notch"></div>
+      <img class="phone-screen" id="mobile-player-img" src="" alt=""/>
+      <div class="mobile-hotspot-overlay" id="mobile-hotspot-overlay">
+        <div class="hotspot" id="mobile-hotspot">
+          <div class="hotspot-ring"><div class="hotspot-dot"></div></div>
+          <div class="tooltip-box pos-right" id="mobile-tooltip-box">
+            <div class="tooltip-step" id="mobile-tooltip-step">Step 1</div>
+            <div class="tooltip-title" id="mobile-tooltip-title"></div>
+            <div class="tooltip-body" id="mobile-tooltip-body"></div>
+            <div class="tooltip-actions">
+              <button class="btn-prev" id="mobile-btn-prev" onclick="prevStep()">← Back</button>
+              <button class="btn-next" id="mobile-btn-next" onclick="nextStep()">Next →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- END SCREEN -->
 <div id="end-screen">
-  <div class="end-icon" id="end-icon">🎉</div>
-  <div class="end-title">That's the full tour!</div>
-  <div class="end-sub">Ready to see this live for your team? Book a personalized demo with Aaron and get started.</div>
-  <a class="btn-book" href="https://hello.tcpsoftware.com/c/aaron-josetcpsoftware-com" target="_blank">Let's Book a Demo</a>
-  <button class="btn-restart" onclick="restartDemo()">↩ Watch again</button>
+  <div class="end-left">
+    <div>
+      <div class="end-logo" id="end-logo"></div>
+      <div class="end-headline">Book a slot<br>that works for you</div>
+      <div class="end-sub" id="end-sub">See how Humanity Schedule automates shift planning and gives your team real-time access from anywhere.</div>
+      <div id="end-bullets"></div>
+    </div>
+    <div id="end-bottom-left"></div>
+  </div>
+  <div class="end-right">
+    <div id="end-right-content"></div>
+    <button class="btn-book" id="btn-book" onclick="openCalendar()">Let's Book a Demo →</button>
+    <button class="btn-restart" onclick="restartDemo()">↩ Watch again</button>
+  </div>
 </div>
 
 <script>
 const API = window.location.origin;
 const ADMIN_PASSWORD = "tcp2024admin";
+const HOTSPOT_COLORS = ["#00B5AD","#FF6B35","#6366F1","#F59E0B","#10B981","#EF4444"];
 
 let demoData = null;
 let currentSlide = 0;
 let currentHotspot = 0;
 let currentDemoId = null;
+let currentDemoSlug = null;
 let pendingHotspots = [];
 let selectedProduct = "humanity";
+let selectedSlideType = "desktop";
+let appShotsInterval = null;
+let currentAppShot = 0;
 
-// Product config
 const PRODUCTS = {
-  "humanity": {
-    name: "Humanity",
-    sub: "Schedule by TCP",
-    color: "#00B5AD",
-    headerBg: "rgba(15,26,46,0.97)",
-    endBg: "#1A2B4A",
-    badgeClass: "badge-humanity",
-    themeClass: "theme-humanity",
-    logoSvg: `<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="7" fill="#00B5AD"/><circle cx="14" cy="10" r="4" fill="white"/><path d="M6 24c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>`
+  humanity:{
+    name:"Humanity",sub:"Schedule",bytcp:true,
+    bullets:["Instantly validate if Humanity is a fit for you","Get answers on scheduling, compliance and pricing","Live walkthrough with your actual team data"],
+    sub_text:"See how Humanity Schedule automates shift planning, closes coverage gaps, and gives your team real-time access from anywhere.",
+    rating:{show:true,num:"4.9",of:"/ 5",stars:"★★★★★",label:"46K ratings",src:"App Store & Google Play"},
+    gplay:"https://play.google.com/store/apps/details?id=com.humanity.apps.humanityV3",
+    astore:"https://apps.apple.com/us/app/humanity-schedule-by-tcp/id1199006408"
   },
-  "humanity-time": {
-    name: "Humanity Time",
-    sub: "Time Tracking by TCP",
-    color: "#7C3AED",
-    headerBg: "rgba(30,15,60,0.97)",
-    endBg: "#1e0f3c",
-    badgeClass: "badge-humanity-time",
-    themeClass: "theme-humanity-time",
-    logoSvg: `<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="7" fill="#7C3AED"/><circle cx="14" cy="14" r="8" stroke="white" stroke-width="2"/><path d="M14 9v5l3 3" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>`
+  "humanity-time":{
+    name:"Humanity",sub:"Time",bytcp:true,
+    bullets:["Built for teams up to 200 employees","Accurate time tracking and labor cost control","Live session with your actual business data"],
+    sub_text:"See how Humanity Time helps small businesses track time accurately, control labor costs, and stay compliant without complexity.",
+    rating:{show:false},
+    gplay:"https://play.google.com/store/apps/details?id=com.timeco.android2",
+    astore:"https://apps.apple.com/us/app/humanity-schedule-by-tcp/id1199006408"
   },
-  "whentowork": {
-    name: "WhenToWork",
-    sub: "Employee Scheduling",
-    color: "#2563EB",
-    headerBg: "rgba(10,24,52,0.97)",
-    endBg: "#0a1834",
-    badgeClass: "badge-whentowork",
-    themeClass: "theme-whentowork",
-    logoSvg: `<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="7" fill="#2563EB"/><rect x="5" y="7" width="18" height="16" rx="2" stroke="white" stroke-width="2"/><path d="M5 12h18M10 5v4M18 5v4" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>`
+  whentowork:{
+    name:"WhenToWork",sub:"",bytcp:false,
+    bullets:["Fast online scheduling for any size team","Employee self-service: trades, time off, messages","Live walkthrough with your team setup"],
+    sub_text:"See how WhenToWork makes employee scheduling fast — online access, shift trades, time off, and messaging all in one place.",
+    rating:{show:false},
+    gplay:"https://play.google.com/store/apps/details?id=com.whentowork.webview",
+    astore:"https://apps.apple.com/us/app/whentowork-employee-scheduling/id1035199750"
   }
 };
 
-const HOTSPOT_COLORS = ["#00B5AD","#FF6B35","#6366F1","#F59E0B","#10B981","#EF4444","#8B5CF6","#EC4899"];
-
 // ── ROUTING ──
-function route() {
+function route(){
   const path = window.location.pathname;
-  if (path === "/manage-xk92") showView("login-view");
-  else if (path.startsWith("/share/")) loadDemo(path.replace("/share/", ""));
+  if(path==="/manage-xk92") showView("login-view");
+  else if(path.startsWith("/share/")) loadDemo(path.replace("/share/",""));
   else showView("login-view");
 }
 
-function showView(id) {
-  document.querySelectorAll(".view").forEach(v => { v.style.display = "none"; v.classList.remove("active"); });
+function showView(id){
+  document.querySelectorAll(".view").forEach(v=>{v.style.display="none";v.classList.remove("active")});
   document.getElementById("end-screen").classList.remove("show");
-  const el = document.getElementById(id);
-  if (el) { el.style.display = "flex"; el.classList.add("active"); }
+  const el=document.getElementById(id);
+  if(el){el.style.display="flex";el.classList.add("active")}
 }
 
 // ── LOGIN ──
-function doLogin() {
-  const val = document.getElementById("login-pass").value;
-  if (val === ADMIN_PASSWORD) {
-    showView("admin-view");
-    loadDemosList();
-    populateDemoSelect();
-  } else {
-    document.getElementById("login-err").textContent = "Incorrect password.";
-  }
+function doLogin(){
+  const val=document.getElementById("login-pass").value;
+  if(val===ADMIN_PASSWORD){showView("admin-view");loadDemosList();populateDemoSelect()}
+  else document.getElementById("login-err").textContent="Incorrect password.";
 }
 
 // ── TABS ──
-function switchTab(id, btn) {
-  document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
-  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-  btn.classList.add("active");
-  if (id === "tab-demos") loadDemosList();
-  if (id === "tab-slides") populateDemoSelect();
+function switchTab(id,btn){
+  document.querySelectorAll(".tab-content").forEach(t=>t.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  document.getElementById(id).classList.add("active");btn.classList.add("active");
+  if(id==="tab-demos") loadDemosList();
+  if(id==="tab-slides") populateDemoSelect();
 }
 
-// ── PRODUCT SELECTOR ──
-function selectProduct(p) {
-  selectedProduct = p;
-  document.querySelectorAll(".product-card").forEach(c => c.classList.remove("selected"));
-  document.getElementById("pc-" + p).classList.add("selected");
+// ── PRODUCT SELECT ──
+function selectProduct(p){
+  selectedProduct=p;
+  document.querySelectorAll(".product-card").forEach(c=>c.classList.remove("selected"));
+  document.getElementById("pc-"+p).classList.add("selected");
+}
+
+// ── SLIDE TYPE ──
+function setSlideType(t){
+  selectedSlideType=t;
+  document.getElementById("stt-desktop").className="stt-btn"+(t==="desktop"?" active":"");
+  document.getElementById("stt-mobile").className="stt-btn"+(t==="mobile"?" active":"");
+  document.getElementById("slide-file-label").textContent=t==="mobile"?"Mobile App Screenshot (PNG/JPG)":"Desktop Screenshot (PNG/JPG)";
+  document.getElementById("slide-file").value="";
+  document.getElementById("img-picker-container").style.display="none";
+  document.getElementById("btn-add-slide").style.display="none";
+  pendingHotspots=[];
 }
 
 // ── DEMOS LIST ──
-async function loadDemosList() {
-  const res = await fetch(API + "/api/demos");
-  const demos = await res.json();
-  const el = document.getElementById("demos-list");
-  if (!demos.length) { el.innerHTML = '<p style="color:var(--gray-text);font-size:13px;">No demos yet. Create one first.</p>'; return; }
-  el.innerHTML = demos.map(d => {
-    const p = PRODUCTS[d.product] || PRODUCTS["humanity"];
-    return `
-      <div class="demo-item">
-        <div class="demo-item-left">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-            <span class="demo-product-badge ${p.badgeClass}">${p.name}</span>
-            <strong>${d.title}</strong>
-          </div>
-          <p>${d.description || "No description"}</p>
-          <a class="demo-link" href="/share/${d.slug}" target="_blank">/share/${d.slug}</a>
+async function loadDemosList(){
+  const res=await fetch(API+"/api/demos");
+  const demos=await res.json();
+  const el=document.getElementById("demos-list");
+  if(!demos.length){el.innerHTML='<p style="color:var(--gtext);font-size:13px">No demos yet. Create one first.</p>';return}
+  el.innerHTML=demos.map(d=>{
+    const p=PRODUCTS[d.product]||PRODUCTS.humanity;
+    return`<div class="demo-item">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <span class="demo-badge">${p.name}${p.sub?" "+p.sub:""}</span>
+          <strong style="font-size:14px;color:#000">${d.title}</strong>
         </div>
-        <button class="btn-danger" onclick="deleteDemo('${d.slug}')">Delete</button>
+        <p style="font-size:12px;color:var(--gtext)">${d.description||"No description"}</p>
+        <a class="demo-link" href="/share/${d.slug}" target="_blank">/share/${d.slug}</a>
       </div>
-    `;
+      <button class="btn-danger" onclick="deleteDemo('${d.slug}')">Delete</button>
+    </div>`
   }).join("");
 }
 
-async function deleteDemo(slug) {
-  if (!confirm("Delete this demo and all its slides?")) return;
-  await fetch(API + "/api/demos/" + slug, { method: "DELETE" });
+async function deleteDemo(slug){
+  if(!confirm("Delete this demo and all its slides?")) return;
+  await fetch(API+"/api/demos/"+slug,{method:"DELETE"});
   loadDemosList();
 }
 
 // ── CREATE DEMO ──
-async function createDemo() {
-  const title = document.getElementById("new-title").value.trim();
-  const slug  = document.getElementById("new-slug").value.trim().toLowerCase().replace(/\s+/g,"-");
-  const desc  = document.getElementById("new-desc").value.trim();
-  if (!title || !slug) { showMsg("create-msg","Title and slug are required.","error"); return; }
-  const btn = document.getElementById("btn-create-demo");
-  btn.innerHTML = '<span class="spinner"></span>Creating...'; btn.disabled = true;
-  const res = await fetch(API + "/api/demos", {
-    method: "POST", headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({slug, title, description: desc, product: selectedProduct})
+async function createDemo(){
+  const title=document.getElementById("new-title").value.trim();
+  const slug=document.getElementById("new-slug").value.trim().toLowerCase().replace(/\s+/g,"-");
+  const desc=document.getElementById("new-desc").value.trim();
+  const cal=document.getElementById("new-cal").value.trim()||"https://hello.tcpsoftware.com/c/aaron-josetcpsoftware-com";
+  if(!title||!slug){showMsg("create-msg","Title and slug are required.","error");return}
+  const btn=document.getElementById("btn-create-demo");
+  btn.innerHTML='<span class="spinner"></span>Creating...';btn.disabled=true;
+  const res=await fetch(API+"/api/demos",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({slug,title,description:desc,product:selectedProduct,calendar_link:cal})
   });
-  btn.innerHTML = "Create Demo"; btn.disabled = false;
-  if (res.ok) {
-    showMsg("create-msg","Demo created! Go to Add Slides to add screenshots.","success");
-    document.getElementById("new-title").value = "";
-    document.getElementById("new-slug").value = "";
-    document.getElementById("new-desc").value = "";
+  btn.innerHTML="Create Demo";btn.disabled=false;
+  if(res.ok){
+    showMsg("create-msg","Demo created! Go to Add Slides.","success");
+    document.getElementById("new-title").value="";
+    document.getElementById("new-slug").value="";
+    document.getElementById("new-desc").value="";
   } else {
-    const err = await res.json();
-    showMsg("create-msg", err.detail || "Error.", "error");
+    const err=await res.json();
+    showMsg("create-msg",err.detail||"Error.","error");
   }
 }
 
 // ── SLIDES ──
-async function populateDemoSelect() {
-  const res = await fetch(API + "/api/demos");
-  const demos = await res.json();
-  const sel = document.getElementById("slide-demo-select");
-  sel.innerHTML = '<option value="">-- Select a demo --</option>' +
-    demos.map(d => {
-      const p = PRODUCTS[d.product] || PRODUCTS["humanity"];
-      return `<option value="${d.id}" data-slug="${d.slug}">[${p.name}] ${d.title}</option>`;
+async function populateDemoSelect(){
+  const res=await fetch(API+"/api/demos");
+  const demos=await res.json();
+  const sel=document.getElementById("slide-demo-select");
+  sel.innerHTML='<option value="">-- Select a demo --</option>'+
+    demos.map(d=>{
+      const p=PRODUCTS[d.product]||PRODUCTS.humanity;
+      return`<option value="${d.id}" data-slug="${d.slug}">[${p.name}${p.sub?" "+p.sub:""}] ${d.title}</option>`
     }).join("");
-  document.getElementById("slide-form-card").style.display = "none";
-  document.getElementById("slides-list-card").style.display = "none";
+  document.getElementById("slide-form-card").style.display="none";
+  document.getElementById("slides-list-card").style.display="none";
 }
 
-async function loadSlidesForDemo() {
-  const sel = document.getElementById("slide-demo-select");
-  currentDemoId = sel.value;
-  if (!currentDemoId) {
-    document.getElementById("slide-form-card").style.display = "none";
-    document.getElementById("slides-list-card").style.display = "none";
+async function loadSlidesForDemo(){
+  const sel=document.getElementById("slide-demo-select");
+  currentDemoId=sel.value;
+  if(!currentDemoId){
+    document.getElementById("slide-form-card").style.display="none";
+    document.getElementById("slides-list-card").style.display="none";
     return;
   }
-  document.getElementById("slide-form-card").style.display = "block";
-  document.getElementById("slides-list-card").style.display = "block";
-  const slug = sel.options[sel.selectedIndex].dataset.slug;
-  const res = await fetch(API + "/api/demos/" + slug);
-  const demo = await res.json();
-  renderSlidesList(demo.slides || []);
+  currentDemoSlug=sel.options[sel.selectedIndex].dataset.slug;
+  document.getElementById("slide-form-card").style.display="block";
+  document.getElementById("slides-list-card").style.display="block";
+  const res=await fetch(API+"/api/demos/"+currentDemoSlug);
+  const demo=await res.json();
+  renderSlidesList(demo.slides||[]);
+  renderAppShots(demo.app_screenshots||[]);
 }
 
-function renderSlidesList(slides) {
-  const el = document.getElementById("slides-list");
-  if (!slides.length) { el.innerHTML = '<p style="color:var(--gray-text);font-size:13px;">No slides yet.</p>'; return; }
-  el.innerHTML = slides.map((s,i) => `
-    <div class="slide-item">
+function renderSlidesList(slides){
+  const el=document.getElementById("slides-list");
+  if(!slides.length){el.innerHTML='<p style="color:var(--gtext);font-size:13px">No slides yet.</p>';return}
+  el.innerHTML=slides.map((s,i)=>{
+    const isMobile=s.slide_type==="mobile";
+    return`<div class="slide-item">
       <span class="slide-pos">${i+1}</span>
-      <img class="slide-thumb" src="${s.image_data}" />
+      <img class="${isMobile?"mobile-thumb":"slide-thumb"}" src="${s.image_data}"/>
       <div class="slide-info">
-        <strong>Slide ${i+1}</strong>
+        <strong>${isMobile?"📱 Mobile":"🖥 Desktop"} Slide ${i+1}</strong>
         <p>${(s.hotspots||[]).length} hotspot${(s.hotspots||[]).length!==1?"s":""}: ${(s.hotspots||[]).map(h=>h.title).join(", ").substring(0,60)}</p>
       </div>
       <button class="btn-danger" onclick="deleteSlide(${s.id})">Remove</button>
+    </div>`
+  }).join("");
+}
+
+async function deleteSlide(id){
+  await fetch(API+"/api/slides/"+id,{method:"DELETE"});
+  loadSlidesForDemo();
+}
+
+// ── APP SCREENSHOTS ──
+function renderAppShots(shots){
+  const grid=document.getElementById("app-shot-grid");
+  if(!shots.length){grid.innerHTML='<p style="font-size:12px;color:var(--gtext)">No screenshots yet.</p>';return}
+  grid.innerHTML=shots.map((s,i)=>`
+    <div class="app-shot-item">
+      <img src="${s}" />
+      <button class="app-shot-del" onclick="deleteAppShot(${i})">✕</button>
     </div>
   `).join("");
 }
 
-async function deleteSlide(id) {
-  await fetch(API + "/api/slides/" + id, {method:"DELETE"});
-  loadSlidesForDemo();
+async function uploadAppShot(){
+  const file=document.getElementById("app-shot-file").files[0];
+  if(!file){showMsg("app-shot-msg","Select a file first.","error");return}
+  if(!currentDemoSlug){showMsg("app-shot-msg","Select a demo first.","error");return}
+  const btn=document.getElementById("btn-app-shot");
+  btn.innerHTML='<span class="spinner"></span>Uploading...';btn.disabled=true;
+  const fd=new FormData();fd.append("file",file);
+  const res=await fetch(API+"/api/demos/"+currentDemoSlug+"/app-screenshots",{method:"POST",body:fd});
+  btn.innerHTML="Upload Screenshot";btn.disabled=false;
+  if(res.ok){
+    showMsg("app-shot-msg","Screenshot uploaded!","success");
+    document.getElementById("app-shot-file").value="";
+    const demo=await (await fetch(API+"/api/demos/"+currentDemoSlug)).json();
+    renderAppShots(demo.app_screenshots||[]);
+  } else showMsg("app-shot-msg","Upload failed.","error");
+}
+
+async function deleteAppShot(idx){
+  await fetch(API+"/api/demos/"+currentDemoSlug+"/app-screenshots/"+idx,{method:"DELETE"});
+  const demo=await (await fetch(API+"/api/demos/"+currentDemoSlug)).json();
+  renderAppShots(demo.app_screenshots||[]);
 }
 
 // ── IMAGE PREVIEW ──
-function previewImage() {
-  const file = document.getElementById("slide-file").files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    document.getElementById("preview-img").src = e.target.result;
-    document.getElementById("img-picker-container").style.display = "block";
-    document.getElementById("btn-add-slide").style.display = "inline-block";
-    pendingHotspots = [];
-    renderPickerDots();
-    renderHotspotEntries();
+function previewImage(){
+  const file=document.getElementById("slide-file").files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    document.getElementById("preview-img").src=e.target.result;
+    document.getElementById("img-picker-container").style.display="block";
+    document.getElementById("btn-add-slide").style.display="inline-block";
+    pendingHotspots=[];
+    renderPickerDots();renderHotspotEntries();
   };
   reader.readAsDataURL(file);
 }
 
-// ── HOTSPOT PLACEMENT ──
-function addHotspotAtClick(e) {
-  const wrap = document.getElementById("img-picker");
-  const rect = wrap.getBoundingClientRect();
-  const x = ((e.clientX - rect.left) / rect.width) * 100;
-  const y = ((e.clientY - rect.top)  / rect.height) * 100;
-  pendingHotspots.push({ x, y, title: "", body: "", position: "right" });
-  renderPickerDots();
-  renderHotspotEntries();
+function addHotspotAtClick(e){
+  const wrap=document.getElementById("img-picker");
+  const rect=wrap.getBoundingClientRect();
+  pendingHotspots.push({x:((e.clientX-rect.left)/rect.width)*100,y:((e.clientY-rect.top)/rect.height)*100,title:"",body:"",position:"right"});
+  renderPickerDots();renderHotspotEntries();
 }
 
-function removeHotspot(idx) {
-  pendingHotspots.splice(idx, 1);
-  renderPickerDots();
-  renderHotspotEntries();
-}
+function removeHotspot(idx){pendingHotspots.splice(idx,1);renderPickerDots();renderHotspotEntries()}
+function clearAllHotspots(){pendingHotspots=[];renderPickerDots();renderHotspotEntries()}
 
-function clearAllHotspots() {
-  pendingHotspots = [];
-  renderPickerDots();
-  renderHotspotEntries();
-}
-
-function renderPickerDots() {
-  const wrap = document.getElementById("img-picker");
-  wrap.querySelectorAll(".pick-dot").forEach(d => d.remove());
-  pendingHotspots.forEach((h, i) => {
-    const dot = document.createElement("div");
-    dot.className = "pick-dot";
-    dot.style.left = h.x + "%";
-    dot.style.top  = h.y + "%";
-    dot.style.background = HOTSPOT_COLORS[i % HOTSPOT_COLORS.length];
-    dot.textContent = i + 1;
+function renderPickerDots(){
+  const wrap=document.getElementById("img-picker");
+  wrap.querySelectorAll(".pick-dot").forEach(d=>d.remove());
+  pendingHotspots.forEach((h,i)=>{
+    const dot=document.createElement("div");
+    dot.className="pick-dot";
+    dot.style.cssText=`left:${h.x}%;top:${h.y}%;background:${HOTSPOT_COLORS[i%HOTSPOT_COLORS.length]}`;
+    dot.textContent=i+1;
     wrap.appendChild(dot);
   });
 }
 
-function renderHotspotEntries() {
-  const container = document.getElementById("hotspot-entries");
-  if (!pendingHotspots.length) {
-    container.innerHTML = '<p style="color:var(--gray-text);font-size:13px;text-align:center;padding:12px 0;">Click on the screenshot above to add hotspots.</p>';
-    return;
-  }
-  container.innerHTML = pendingHotspots.map((h, i) => {
-    const color = HOTSPOT_COLORS[i % HOTSPOT_COLORS.length];
-    return `
-      <div class="hotspot-entry">
-        <div class="hotspot-entry-header">
-          <span class="hotspot-entry-num" style="background:${color}22;color:${color}">Hotspot ${i+1}</span>
-          <button class="btn-danger" onclick="removeHotspot(${i})">Remove</button>
-        </div>
-        <p class="hotspot-coords">Position: ${h.x.toFixed(1)}% from left, ${h.y.toFixed(1)}% from top</p>
-        <div class="form-grid" style="margin-top:10px">
-          <div class="form-row">
-            <label>Tooltip Title</label>
-            <input type="text" value="${h.title}" placeholder="e.g. Shift Planning" oninput="pendingHotspots[${i}].title=this.value" />
-          </div>
-          <div class="form-row">
-            <label>Tooltip Position</label>
-            <select onchange="pendingHotspots[${i}].position=this.value">
-              <option value="right"  ${h.position==="right"?"selected":""}>Right of hotspot</option>
-              <option value="left"   ${h.position==="left"?"selected":""}>Left of hotspot</option>
-              <option value="bottom" ${h.position==="bottom"?"selected":""}>Below hotspot</option>
-              <option value="top"    ${h.position==="top"?"selected":""}>Above hotspot</option>
-            </select>
-          </div>
+function renderHotspotEntries(){
+  const c=document.getElementById("hotspot-entries");
+  if(!pendingHotspots.length){c.innerHTML='<p style="color:var(--gtext);font-size:13px;text-align:center;padding:12px 0">Click the screenshot above to add hotspots.</p>';return}
+  c.innerHTML=pendingHotspots.map((h,i)=>`
+    <div class="hotspot-entry">
+      <div class="hotspot-entry-header">
+        <span class="hotspot-entry-num" style="background:${HOTSPOT_COLORS[i%HOTSPOT_COLORS.length]}22;color:${HOTSPOT_COLORS[i%HOTSPOT_COLORS.length]}">Hotspot ${i+1}</span>
+        <button class="btn-danger" onclick="removeHotspot(${i})">Remove</button>
+      </div>
+      <p class="hotspot-coords">Position: ${h.x.toFixed(1)}% from left, ${h.y.toFixed(1)}% from top</p>
+      <div class="form-grid" style="margin-top:10px">
+        <div class="form-row">
+          <label>Tooltip Title</label>
+          <input type="text" value="${h.title}" placeholder="e.g. Who's On Now" oninput="pendingHotspots[${i}].title=this.value"/>
         </div>
         <div class="form-row">
-          <label>Tooltip Body</label>
-          <textarea placeholder="Describe what the prospect is seeing..." oninput="pendingHotspots[${i}].body=this.value">${h.body}</textarea>
+          <label>Tooltip Position</label>
+          <select onchange="pendingHotspots[${i}].position=this.value">
+            <option value="right" ${h.position==="right"?"selected":""}>Right</option>
+            <option value="left" ${h.position==="left"?"selected":""}>Left</option>
+            <option value="bottom" ${h.position==="bottom"?"selected":""}>Below</option>
+            <option value="top" ${h.position==="top"?"selected":""}>Above</option>
+          </select>
         </div>
       </div>
-    `;
-  }).join("");
+      <div class="form-row">
+        <label>Tooltip Body</label>
+        <textarea placeholder="Describe what the prospect sees..." oninput="pendingHotspots[${i}].body=this.value">${h.body}</textarea>
+      </div>
+    </div>
+  `).join("");
 }
 
-// ── UPLOAD SLIDE ──
-async function addSlide() {
-  if (!currentDemoId) { showMsg("slide-msg","Select a demo first.","error"); return; }
-  const file = document.getElementById("slide-file").files[0];
-  if (!file) { showMsg("slide-msg","Please upload a screenshot.","error"); return; }
-  if (!pendingHotspots.length) { showMsg("slide-msg","Please add at least one hotspot by clicking the screenshot.","error"); return; }
-  for (let i = 0; i < pendingHotspots.length; i++) {
-    if (!pendingHotspots[i].title.trim() || !pendingHotspots[i].body.trim()) {
-      showMsg("slide-msg",`Please fill in title and body for Hotspot ${i+1}.`,"error"); return;
+async function addSlide(){
+  if(!currentDemoId){showMsg("slide-msg","Select a demo first.","error");return}
+  const file=document.getElementById("slide-file").files[0];
+  if(!file){showMsg("slide-msg","Please upload a screenshot.","error");return}
+  if(!pendingHotspots.length){showMsg("slide-msg","Add at least one hotspot by clicking the screenshot.","error");return}
+  for(let i=0;i<pendingHotspots.length;i++){
+    if(!pendingHotspots[i].title.trim()||!pendingHotspots[i].body.trim()){
+      showMsg("slide-msg",`Fill in title and body for Hotspot ${i+1}.`,"error");return
     }
   }
-  const btn = document.getElementById("btn-add-slide");
-  btn.innerHTML = '<span class="spinner"></span>Uploading...'; btn.disabled = true;
-  const selEl = document.getElementById("slide-demo-select");
-  const slug  = selEl.options[selEl.selectedIndex].dataset.slug;
-  const dRes  = await fetch(API + "/api/demos/" + slug);
-  const demo  = await dRes.json();
-  const position = (demo.slides || []).length + 1;
-  const fd = new FormData();
-  fd.append("file", file);
-  const params = new URLSearchParams({ demo_id: currentDemoId, position, hotspots: JSON.stringify(pendingHotspots) });
-  const res = await fetch(API + "/api/slides?" + params, {method:"POST", body: fd});
-  btn.innerHTML = "Add Slide"; btn.disabled = false;
-  if (res.ok) {
+  const btn=document.getElementById("btn-add-slide");
+  btn.innerHTML='<span class="spinner"></span>Uploading...';btn.disabled=true;
+  const res1=await fetch(API+"/api/demos/"+currentDemoSlug);
+  const demo=await res1.json();
+  const position=(demo.slides||[]).length+1;
+  const fd=new FormData();fd.append("file",file);
+  const params=new URLSearchParams({demo_id:currentDemoId,position,hotspots:JSON.stringify(pendingHotspots),slide_type:selectedSlideType});
+  const res=await fetch(API+"/api/slides?"+params,{method:"POST",body:fd});
+  btn.innerHTML="Add Slide";btn.disabled=false;
+  if(res.ok){
     showMsg("slide-msg","Slide added!","success");
-    document.getElementById("slide-file").value = "";
-    document.getElementById("img-picker-container").style.display = "none";
-    document.getElementById("btn-add-slide").style.display = "none";
-    pendingHotspots = [];
+    document.getElementById("slide-file").value="";
+    document.getElementById("img-picker-container").style.display="none";
+    document.getElementById("btn-add-slide").style.display="none";
+    pendingHotspots=[];
     loadSlidesForDemo();
   } else {
-    const errText = await res.text();
-    showMsg("slide-msg","Upload failed: " + errText,"error");
+    const t=await res.text();
+    showMsg("slide-msg","Upload failed: "+t,"error");
   }
 }
 
 // ── PLAYER ──
-function applyTheme(product) {
-  const p = PRODUCTS[product] || PRODUCTS["humanity"];
-  const playerView = document.getElementById("player-view");
-  playerView.className = "view active " + p.themeClass;
-
-  // Logo
-  document.getElementById("player-logo-area").innerHTML = `
-    ${p.logoSvg}
-    <div>
-      <div class="logo-text">${p.name}</div>
-      <div class="logo-sub">${p.sub}</div>
-    </div>
-  `;
-
-  // End screen bg
-  document.getElementById("end-screen").style.background = p.endBg;
-  document.getElementById("end-icon").style.cssText = `border: 2px solid ${p.color}; background: ${p.color}22;`;
-}
-
-async function loadDemo(slug) {
-  document.body.style.background = "#0f1a2e";
-  try {
-    const res = await fetch(API + "/api/demos/" + slug);
-    if (!res.ok) { document.body.innerHTML = errPage("Demo not found."); return; }
-    demoData = await res.json();
-    if (!demoData.slides || !demoData.slides.length) { document.body.innerHTML = errPage("No slides in this demo yet."); return; }
-    currentSlide = 0;
-    currentHotspot = 0;
-    showView("player-view");
-    applyTheme(demoData.product || "humanity");
-    renderStep();
-  } catch(e) {
-    document.body.innerHTML = errPage("Failed to load demo.");
+function renderPlayerLogo(product){
+  const p=PRODUCTS[product]||PRODUCTS.humanity;
+  const el=document.getElementById("player-logo-area");
+  if(p.name==="WhenToWork"){
+    el.innerHTML=`<div class="logo-text-wrap"><span class="logo-main">WhenToWork</span><span class="logo-bytcp" style="color:rgba(255,255,255,0.35)">Employee Scheduling</span></div>`;
+  } else {
+    el.innerHTML=`<div class="logo-text-wrap"><span class="logo-main">${p.name}<span>${p.sub}</span></span>${p.bytcp?'<span class="logo-bytcp">by tcp™</span>':''}</div>`;
   }
 }
 
-function errPage(msg) {
-  return `<div style="color:white;display:flex;align-items:center;justify-content:center;height:100vh;font-size:20px;background:#1A2B4A;font-family:sans-serif;">${msg}</div>`;
+async function loadDemo(slug){
+  document.body.style.background="#000";
+  try{
+    const res=await fetch(API+"/api/demos/"+slug);
+    if(!res.ok){document.body.innerHTML=errPage("Demo not found.");return}
+    demoData=await res.json();
+    if(!demoData.slides||!demoData.slides.length){document.body.innerHTML=errPage("No slides yet.");return}
+    currentSlide=0;currentHotspot=0;
+    showView("player-view");
+    renderPlayerLogo(demoData.product);
+    renderStep();
+  }catch(e){document.body.innerHTML=errPage("Failed to load demo.")}
 }
 
-function renderStep() {
-  if (!demoData) return;
-  const slides = demoData.slides;
-  const s = slides[currentSlide];
-  const hotspots = s.hotspots || [];
-  const h = hotspots[currentHotspot];
-
-  const totalSteps = slides.reduce((a, sl) => a + Math.max(1,(sl.hotspots||[]).length), 0);
-  const stepsBeforeThis = slides.slice(0, currentSlide).reduce((a, sl) => a + Math.max(1,(sl.hotspots||[]).length), 0);
-  const globalStep = stepsBeforeThis + currentHotspot + 1;
-
-  document.getElementById("player-img").src = s.image_data;
-  window.scrollTo({top: 0, behavior: "smooth"});
-
-  const hotspotEl = document.getElementById("hotspot");
-  hotspotEl.style.left = h.x + "%";
-  hotspotEl.style.top  = h.y + "%";
-
-  const tb = document.getElementById("tooltip-box");
-  tb.className = "tooltip-box pos-" + h.position;
-  document.getElementById("tooltip-step").textContent  = "Step " + globalStep + " of " + totalSteps;
-  document.getElementById("tooltip-title").textContent = h.title;
-  document.getElementById("tooltip-body").textContent  = h.body;
-  document.getElementById("btn-prev").style.visibility = (currentSlide===0 && currentHotspot===0) ? "hidden" : "visible";
-
-  const isLast = currentSlide===slides.length-1 && currentHotspot===(hotspots.length-1);
-  document.getElementById("btn-next").textContent = isLast ? "Finish ✓" : "Next →";
-
-  document.getElementById("prog-fill").style.width = (globalStep/totalSteps*100) + "%";
-  document.getElementById("prog-label").textContent = globalStep + " of " + totalSteps;
+function errPage(msg){
+  return`<div style="color:white;display:flex;align-items:center;justify-content:center;height:100vh;font-size:20px;background:#000;font-family:sans-serif">${msg}</div>`;
 }
 
-function nextStep() {
-  const slides = demoData.slides;
-  const hotspots = slides[currentSlide].hotspots || [];
-  if (currentHotspot < hotspots.length - 1) { currentHotspot++; renderStep(); }
-  else if (currentSlide < slides.length - 1) { currentSlide++; currentHotspot = 0; renderStep(); }
+function renderStep(){
+  if(!demoData) return;
+  const slides=demoData.slides;
+  const s=slides[currentSlide];
+  const hotspots=s.hotspots||[];
+  const h=hotspots[currentHotspot];
+  const isMobile=s.slide_type==="mobile";
+
+  const totalSteps=slides.reduce((a,sl)=>a+Math.max(1,(sl.hotspots||[]).length),0);
+  const stepsBeforeThis=slides.slice(0,currentSlide).reduce((a,sl)=>a+Math.max(1,(sl.hotspots||[]).length),0);
+  const globalStep=stepsBeforeThis+currentHotspot+1;
+
+  // Show/hide correct view
+  document.getElementById("player-scroll-area").style.display=isMobile?"none":"block";
+  document.getElementById("mobile-frame-wrap").style.display=isMobile?"flex":"none";
+
+  if(isMobile){
+    document.getElementById("mobile-player-img").src=s.image_data;
+    const mh=document.getElementById("mobile-hotspot");
+    mh.style.left=h.x+"%";mh.style.top=h.y+"%";
+    const mtb=document.getElementById("mobile-tooltip-box");
+    mtb.className="tooltip-box pos-"+h.position;
+    document.getElementById("mobile-tooltip-step").textContent="Step "+globalStep+" of "+totalSteps;
+    document.getElementById("mobile-tooltip-title").textContent=h.title;
+    document.getElementById("mobile-tooltip-body").textContent=h.body;
+    document.getElementById("mobile-btn-prev").style.visibility=(currentSlide===0&&currentHotspot===0)?"hidden":"visible";
+    const isLast=currentSlide===slides.length-1&&currentHotspot===hotspots.length-1;
+    document.getElementById("mobile-btn-next").textContent=isLast?"Finish ✓":"Next →";
+  } else {
+    document.getElementById("player-img").src=s.image_data;
+    window.scrollTo({top:0,behavior:"smooth"});
+    const hotEl=document.getElementById("hotspot");
+    hotEl.style.left=h.x+"%";hotEl.style.top=h.y+"%";
+    const tb=document.getElementById("tooltip-box");
+    tb.className="tooltip-box pos-"+h.position;
+    document.getElementById("tooltip-step").textContent="Step "+globalStep+" of "+totalSteps;
+    document.getElementById("tooltip-title").textContent=h.title;
+    document.getElementById("tooltip-body").textContent=h.body;
+    document.getElementById("btn-prev").style.visibility=(currentSlide===0&&currentHotspot===0)?"hidden":"visible";
+    const isLast=currentSlide===slides.length-1&&currentHotspot===hotspots.length-1;
+    document.getElementById("btn-next").textContent=isLast?"Finish ✓":"Next →";
+  }
+
+  document.getElementById("prog-fill").style.width=(globalStep/totalSteps*100)+"%";
+  document.getElementById("prog-label").textContent=globalStep+" of "+totalSteps;
+}
+
+function nextStep(){
+  const slides=demoData.slides;
+  const hotspots=slides[currentSlide].hotspots||[];
+  if(currentHotspot<hotspots.length-1){currentHotspot++;renderStep()}
+  else if(currentSlide<slides.length-1){currentSlide++;currentHotspot=0;renderStep()}
   else showEndScreen();
 }
 
-function prevStep() {
-  if (currentHotspot > 0) { currentHotspot--; renderStep(); }
-  else if (currentSlide > 0) {
+function prevStep(){
+  if(currentHotspot>0){currentHotspot--;renderStep()}
+  else if(currentSlide>0){
     currentSlide--;
-    currentHotspot = Math.max(0, (demoData.slides[currentSlide].hotspots||[]).length - 1);
+    currentHotspot=Math.max(0,(demoData.slides[currentSlide].hotspots||[]).length-1);
     renderStep();
   }
 }
 
-function showEndScreen() {
-  document.getElementById("player-view").style.display = "none";
+// ── END SCREEN ──
+function showEndScreen(){
+  clearInterval(appShotsInterval);
+  document.getElementById("player-view").style.display="none";
+  const product=demoData.product||"humanity";
+  const p=PRODUCTS[product]||PRODUCTS.humanity;
+  const shots=demoData.app_screenshots||[];
+  const calLink=demoData.calendar_link||"https://hello.tcpsoftware.com/c/aaron-josetcpsoftware-com";
+
+  // Logo
+  let logoHtml="";
+  if(p.name==="WhenToWork"){
+    logoHtml=`<div style="margin-bottom:8px"><span style="font-size:26px;font-weight:700;color:#fff">WhenToWork</span></div><div style="font-size:12px;color:rgba(255,255,255,0.4)">Employee Scheduling</div>`;
+  } else {
+    logoHtml=`<div style="margin-bottom:4px"><span style="font-size:26px;font-weight:700;color:#fff">${p.name}</span><span style="font-size:16px;font-weight:300;color:rgba(255,255,255,0.5);margin-left:6px">${p.sub}</span></div>${p.bytcp?'<div style="font-size:12px;color:#2563EB">by tcp™</div>':""}`;
+  }
+  document.getElementById("end-logo").innerHTML=logoHtml;
+  document.getElementById("end-sub").textContent=p.sub_text;
+
+  // Bullets
+  document.getElementById("end-bullets").innerHTML=p.bullets.map(b=>`
+    <div class="end-bullet"><div class="end-bdot"></div><div class="end-btext">${b}</div></div>
+  `).join("");
+
+  // Bottom left: rating or app screenshots
+  const blEl=document.getElementById("end-bottom-left");
+  if(p.rating.show){
+    blEl.innerHTML=`
+      <div class="end-rating-row">
+        <div style="text-align:center;padding-right:14px;border-right:1px solid #1f1f1f">
+          <div class="end-rating-num">${p.rating.num} <span class="end-rating-of">${p.rating.of}</span></div>
+          <div class="end-rating-label" style="margin-top:3px">${p.rating.label}</div>
+        </div>
+        <div>
+          <span class="end-stars">${p.rating.stars}</span>
+          <div class="end-rating-label">${p.rating.src}</div>
+        </div>
+      </div>
+      ${storeButtons(p)}
+    `;
+  } else {
+    blEl.innerHTML=storeButtons(p);
+  }
+
+  // Right side: app screenshots or check icon
+  const rrEl=document.getElementById("end-right-content");
+  if(shots.length){
+    currentAppShot=0;
+    rrEl.innerHTML=`
+      <div class="app-slideshow">
+        <div class="phone-slide-frame">
+          <div class="phone-slide-notch"></div>
+          <img class="app-slide-img" id="app-slide-img" src="${shots[0]}"/>
+        </div>
+        ${shots.length>1?`<div class="slide-dots" id="slide-dots">${shots.map((_,i)=>`<button class="slide-dot${i===0?" on":""}" onclick="goToShot(${i})"></button>`).join("")}</div>`:""}
+      </div>
+    `;
+    if(shots.length>1){
+      appShotsInterval=setInterval(()=>{
+        currentAppShot=(currentAppShot+1)%shots.length;
+        goToShot(currentAppShot);
+      },3000);
+    }
+  } else {
+    rrEl.innerHTML=`
+      <div class="end-check-icon">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M5 14l7 7L23 7" stroke="#00B5AD" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="end-tour-done">Tour complete</div>
+      <div class="end-right-headline">That's the full tour!</div>
+      <div class="end-right-sub">Ready to see this live for your team? Book a 20-min session and see it with your actual data.</div>
+    `;
+  }
+
+  document.getElementById("btn-book").onclick=()=>window.open(calLink,"_blank");
   document.getElementById("end-screen").classList.add("show");
 }
 
-function restartDemo() {
-  currentSlide = 0; currentHotspot = 0;
+function goToShot(idx){
+  currentAppShot=idx;
+  const img=document.getElementById("app-slide-img");
+  if(img){
+    img.style.animation="none";
+    requestAnimationFrame(()=>{img.style.animation="";img.src=demoData.app_screenshots[idx]});
+  }
+  document.querySelectorAll(".slide-dot").forEach((d,i)=>d.className="slide-dot"+(i===idx?" on":""));
+}
+
+function storeButtons(p){
+  return`<div class="store-row">
+    <a class="store-btn" href="${p.gplay}" target="_blank">
+      <svg width="20" height="20" viewBox="0 0 24 24"><path d="M3 3.5L13.5 12 3 20.5V3.5z" fill="#4285F4"/><path d="M3 3.5l10.5 8.5-3 3L3 3.5z" fill="#EA4335"/><path d="M3 20.5l7.5-8.5 3 3L3 20.5z" fill="#FBBC05"/><path d="M13.5 12l5 2.5-5 2.5-2.5-2.5z" fill="#34A853"/></svg>
+      <div><div class="store-sub">Get it on</div><div class="store-name">Google Play</div></div>
+    </a>
+    <a class="store-btn" href="${p.astore}" target="_blank">
+      <svg width="17" height="20" viewBox="0 0 24 24" fill="none"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83zM13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" fill="white"/></svg>
+      <div><div class="store-sub">Download on the</div><div class="store-name">App Store</div></div>
+    </a>
+  </div>`;
+}
+
+function openCalendar(){
+  const link=demoData&&demoData.calendar_link?demoData.calendar_link:"https://hello.tcpsoftware.com/c/aaron-josetcpsoftware-com";
+  window.open(link,"_blank");
+}
+
+function restartDemo(){
+  clearInterval(appShotsInterval);
+  currentSlide=0;currentHotspot=0;
   document.getElementById("end-screen").classList.remove("show");
   showView("player-view");
-  applyTheme(demoData.product || "humanity");
+  renderPlayerLogo(demoData.product);
   renderStep();
 }
 
-function showMsg(id, text, type) {
-  const el = document.getElementById(id);
-  el.innerHTML = `<div class="msg ${type}">${text}</div>`;
-  setTimeout(() => el.innerHTML = "", 5000);
+function showMsg(id,text,type){
+  const el=document.getElementById(id);
+  el.innerHTML=`<div class="msg ${type}">${text}</div>`;
+  setTimeout(()=>el.innerHTML="",5000);
 }
 
 route();
