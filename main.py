@@ -1,22 +1,14 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from typing import Optional
-import os
-import base64
+from typing import Optional, List
+import os, base64, json
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
 app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 
@@ -39,11 +31,7 @@ def init_db():
             demo_id INTEGER REFERENCES demos(id) ON DELETE CASCADE,
             position INTEGER NOT NULL,
             image_data TEXT NOT NULL,
-            hotspot_x FLOAT NOT NULL DEFAULT 50,
-            hotspot_y FLOAT NOT NULL DEFAULT 50,
-            tooltip_title TEXT NOT NULL DEFAULT '',
-            tooltip_body TEXT NOT NULL DEFAULT '',
-            tooltip_position TEXT NOT NULL DEFAULT 'right'
+            hotspots JSONB NOT NULL DEFAULT '[]'
         );
     """)
     conn.commit()
@@ -60,12 +48,15 @@ class DemoCreate(BaseModel):
     title: str
     description: Optional[str] = ""
 
-class SlideUpdate(BaseModel):
-    hotspot_x: Optional[float] = None
-    hotspot_y: Optional[float] = None
-    tooltip_title: Optional[str] = None
-    tooltip_body: Optional[str] = None
-    tooltip_position: Optional[str] = None
+class Hotspot(BaseModel):
+    x: float
+    y: float
+    title: str
+    body: str
+    position: str = "right"
+
+class SlideHotspotsUpdate(BaseModel):
+    hotspots: List[Hotspot]
 
 @app.get("/api/health")
 def health():
@@ -109,11 +100,13 @@ def get_demo(slug: str):
     if not demo:
         raise HTTPException(status_code=404, detail="Demo not found")
     demo = dict(demo)
-    cur.execute(
-        "SELECT * FROM slides WHERE demo_id = %s ORDER BY position ASC",
-        (demo["id"],)
-    )
-    slides = [dict(r) for r in cur.fetchall()]
+    cur.execute("SELECT * FROM slides WHERE demo_id = %s ORDER BY position ASC", (demo["id"],))
+    slides = []
+    for r in cur.fetchall():
+        s = dict(r)
+        if isinstance(s["hotspots"], str):
+            s["hotspots"] = json.loads(s["hotspots"])
+        slides.append(s)
     demo["slides"] = slides
     cur.close()
     conn.close()
@@ -123,11 +116,7 @@ def get_demo(slug: str):
 async def create_slide(
     demo_id: int,
     position: int,
-    hotspot_x: float,
-    hotspot_y: float,
-    tooltip_title: str,
-    tooltip_body: str,
-    tooltip_position: str = "right",
+    hotspots: str = "[]",
     file: UploadFile = File(...)
 ):
     content = await file.read()
@@ -135,31 +124,31 @@ async def create_slide(
     mime = file.content_type or "image/png"
     image_data = f"data:{mime};base64,{b64}"
 
+    try:
+        hotspots_data = json.loads(hotspots)
+    except:
+        hotspots_data = []
+
     conn = get_conn()
     cur = conn.cursor()
     cur.execute(
-        """INSERT INTO slides
-           (demo_id, position, image_data, hotspot_x, hotspot_y, tooltip_title, tooltip_body, tooltip_position)
-           VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING *""",
-        (demo_id, position, image_data, hotspot_x, hotspot_y, tooltip_title, tooltip_body, tooltip_position)
+        "INSERT INTO slides (demo_id, position, image_data, hotspots) VALUES (%s, %s, %s, %s) RETURNING id, demo_id, position, hotspots",
+        (demo_id, position, image_data, json.dumps(hotspots_data))
     )
     row = dict(cur.fetchone())
     conn.commit()
     cur.close()
     conn.close()
-    row["image_data"] = "[stored]"
     return row
 
-@app.patch("/api/slides/{slide_id}")
-def update_slide(slide_id: int, update: SlideUpdate):
+@app.patch("/api/slides/{slide_id}/hotspots")
+def update_hotspots(slide_id: int, update: SlideHotspotsUpdate):
     conn = get_conn()
     cur = conn.cursor()
-    fields = {k: v for k, v in update.dict().items() if v is not None}
-    if not fields:
-        raise HTTPException(status_code=400, detail="Nothing to update")
-    set_clause = ", ".join(f"{k} = %s" for k in fields)
-    values = list(fields.values()) + [slide_id]
-    cur.execute(f"UPDATE slides SET {set_clause} WHERE id = %s RETURNING id", values)
+    cur.execute(
+        "UPDATE slides SET hotspots = %s WHERE id = %s RETURNING id",
+        (json.dumps([h.dict() for h in update.hotspots]), slide_id)
+    )
     conn.commit()
     cur.close()
     conn.close()
@@ -185,7 +174,6 @@ def delete_demo(slug: str):
     conn.close()
     return {"deleted": slug}
 
-# All frontend routes — serve index.html from same directory as main.py
 HERE = os.path.dirname(os.path.abspath(__file__))
 INDEX = os.path.join(HERE, "index.html")
 
