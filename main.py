@@ -1,14 +1,27 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional, List
-import os, base64, json
+import os, base64, json, io
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+# Try to import Pillow for image compression
+try:
+    from PIL import Image
+    HAS_PIL = True
+except ImportError:
+    HAS_PIL = False
+
 app = FastAPI()
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 
@@ -43,6 +56,33 @@ try:
 except Exception as e:
     print(f"DB init error: {e}")
 
+def compress_image(content: bytes, mime: str) -> tuple[str, str]:
+    """Compress image using Pillow if available, else return as-is."""
+    if not HAS_PIL:
+        b64 = base64.b64encode(content).decode()
+        return f"data:{mime};base64,{b64}", mime
+
+    try:
+        img = Image.open(io.BytesIO(content))
+        # Convert RGBA to RGB if needed
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+        # Resize if wider than 1600px
+        max_w = 1600
+        if img.width > max_w:
+            ratio = max_w / img.width
+            img = img.resize((max_w, int(img.height * ratio)), Image.LANCZOS)
+        # Save as JPEG with quality 75
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=75, optimize=True)
+        buf.seek(0)
+        b64 = base64.b64encode(buf.read()).decode()
+        return f"data:image/jpeg;base64,{b64}", "image/jpeg"
+    except Exception as e:
+        print(f"Compression error: {e}")
+        b64 = base64.b64encode(content).decode()
+        return f"data:{mime};base64,{b64}", mime
+
 class DemoCreate(BaseModel):
     slug: str
     title: str
@@ -60,7 +100,7 @@ class SlideHotspotsUpdate(BaseModel):
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "ok", "pil": HAS_PIL}
 
 @app.post("/api/demos")
 def create_demo(demo: DemoCreate):
@@ -120,9 +160,8 @@ async def create_slide(
     file: UploadFile = File(...)
 ):
     content = await file.read()
-    b64 = base64.b64encode(content).decode()
     mime = file.content_type or "image/png"
-    image_data = f"data:{mime};base64,{b64}"
+    image_data, _ = compress_image(content, mime)
 
     try:
         hotspots_data = json.loads(hotspots)
