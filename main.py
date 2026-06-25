@@ -245,6 +245,20 @@ def delete_slide(slide_id: int):
     cur.close(); conn.close()
     return {"deleted": slide_id}
 
+class SlideReorder(BaseModel):
+    demo_id: int
+    order: List[int]  # slide ids in new order
+
+@app.post("/api/slides/reorder")
+def reorder_slides(body: SlideReorder):
+    conn = get_conn()
+    cur = conn.cursor()
+    for pos, slide_id in enumerate(body.order, start=1):
+        cur.execute("UPDATE slides SET position=%s WHERE id=%s AND demo_id=%s", (pos, slide_id, body.demo_id))
+    conn.commit()
+    cur.close(); conn.close()
+    return {"reordered": True}
+
 @app.delete("/api/demos/{slug}")
 def delete_demo(slug: str):
     conn = get_conn()
