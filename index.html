@@ -19,7 +19,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 .player-header{
   position:fixed;top:0;left:0;right:0;height:52px;padding:0 28px;
   display:flex;align-items:center;justify-content:space-between;
-  background:rgba(0,0,0,0.96);border-bottom:1px solid #1a1a1a;z-index:1000;
+  background:rgba(10,22,44,0.97);border-bottom:1px solid rgba(0,181,173,0.2);z-index:1000;
 }
 .logo-text-wrap{display:flex;flex-direction:column;line-height:1;border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:6px 12px}
 .logo-main{font-size:15px;font-weight:700;color:#fff;letter-spacing:-0.2px}
@@ -27,7 +27,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 .logo-bytcp{font-size:10px;color:#2563EB;margin-top:1px}
 .player-progress-wrap{display:flex;align-items:center;gap:12px;flex:1;max-width:500px;margin:0 32px}
 .progress-bar-bg{flex:1;height:2px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden}
-.progress-bar-fill{height:100%;background:var(--teal);border-radius:2px;transition:width 0.4s ease}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,#00B5AD,#2563EB);border-radius:2px;transition:width 0.4s ease}
 .progress-label{font-size:11px;color:rgba(255,255,255,0.35);white-space:nowrap}
 .player-scroll-area{margin-top:52px;position:relative;width:100%}
 #player-img{display:block;width:100%;height:auto;user-select:none;pointer-events:none}
@@ -86,14 +86,16 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 .mobile-hotspot-overlay{position:absolute;top:0;left:0;right:0;bottom:0}
 
 /* ── END SCREEN ── */
-#end-screen{display:none;background:#000}
+#end-screen{display:none;background:linear-gradient(135deg,#0a1628 0%,#1A2B4A 50%,#0d2240 100%)}
 #end-screen.show{display:flex;align-items:center;justify-content:center;height:100vh}
 .end-left{display:none}
 .end-right{display:none}
 .end-right-inner{display:none}
 .end-center{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  text-align:center;width:100%;max-width:480px;padding:40px 24px;gap:20px;
+  text-align:center;width:100%;max-width:520px;padding:48px 40px;gap:22px;
+  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);
+  border-radius:20px;backdrop-filter:blur(10px);
 }
 .end-logo{margin-bottom:32px}
 .end-headline{font-size:26px;font-weight:700;color:#fff;line-height:1.2;margin-bottom:8px}
@@ -147,32 +149,34 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 
 /* Right side end screen */
 .end-check-icon{
-  width:80px;height:80px;border-radius:50%;
-  border:2px solid #00B5AD;background:rgba(0,181,173,0.1);
+  width:84px;height:84px;border-radius:50%;
+  border:2.5px solid #00B5AD;
+  background:linear-gradient(135deg,rgba(0,181,173,0.2),rgba(37,99,235,0.15));
   display:flex;align-items:center;justify-content:center;margin:0 auto;flex-shrink:0;
-  animation:checkPop 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+  animation:checkPop 0.55s cubic-bezier(0.34,1.56,0.64,1) both;
+  box-shadow:0 0 32px rgba(0,181,173,0.25);
 }
 @keyframes checkPop{
   0%{transform:scale(0);opacity:0}
   100%{transform:scale(1);opacity:1}
 }
-.end-tour-done{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--teal);display:block}
-.end-right-headline{font-size:28px;font-weight:700;color:#fff;line-height:1.2;display:block}
-.end-right-sub{font-size:14px;color:rgba(255,255,255,0.5);line-height:1.65;display:block;max-width:360px}
+.end-tour-done{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#00B5AD;display:block;opacity:0.9}
+.end-right-headline{font-size:30px;font-weight:800;color:#fff;line-height:1.2;display:block;letter-spacing:-0.5px}
+.end-right-sub{font-size:14px;color:rgba(200,220,255,0.6);line-height:1.65;display:block;max-width:380px}
 .btn-book{
   width:100%;padding:16px;border:none;border-radius:12px;
   font-size:16px;font-weight:700;color:#fff;cursor:pointer;
-  background:var(--orange);letter-spacing:.3px;transition:all 0.2s;display:block;
-  box-shadow:0 4px 24px rgba(255,107,53,0.4);
+  background:linear-gradient(135deg,#00B5AD,#2563EB);letter-spacing:.3px;transition:all 0.2s;display:block;
+  box-shadow:0 4px 28px rgba(0,181,173,0.35);
 }
-.btn-book:hover{filter:brightness(0.9);transform:translateY(-2px);box-shadow:0 8px 32px rgba(255,107,53,0.5)}
-.btn-book:hover{filter:brightness(.88)}
+.btn-book:hover{filter:brightness(1.08);transform:translateY(-2px);box-shadow:0 8px 36px rgba(0,181,173,0.5)}
+
 .btn-restart{
-  font-size:13px;color:rgba(255,255,255,0.3);cursor:pointer;
+  font-size:13px;color:rgba(180,210,255,0.4);cursor:pointer;
   text-decoration:none;background:none;border:none;display:block;margin:0 auto;
   transition:color 0.2s;
 }
-.btn-restart:hover{color:rgba(255,255,255,0.6)}
+.btn-restart:hover{color:rgba(180,210,255,0.8)}
 
 /* ── ADMIN ── */
 #admin-view{flex-direction:column;background:var(--gbg);min-height:100vh}
@@ -958,41 +962,22 @@ function showEndScreen(){
   const repName=demoData.rep_name||"Aaron Jose";
 
   const rrEl=document.getElementById("end-right-content");
-  if(shots.length){
-    currentAppShot=0;
-    rrEl.innerHTML=`
-      <div class="app-slideshow">
-        <div class="phone-slide-frame">
-          <div class="phone-slide-notch"></div>
-          <img class="app-slide-img" id="app-slide-img" src="${shots[0]}"/>
-        </div>
-        ${shots.length>1?`<div class="slide-dots" id="slide-dots">${shots.map((_,i)=>`<button class="slide-dot${i===0?" on":""}" onclick="goToShot(${i})"></button>`).join("")}</div>`:""}
+  rrEl.innerHTML=`
+    <div class="end-check-icon">
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><path d="M6 18l9 9L30 9" stroke="#00B5AD" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="end-tour-done">Tour complete</div>
+    <div class="end-right-headline">That's the full tour!</div>
+    <div class="end-right-sub">Ready to see this live for your team? Book a 20-min session with ${repName} and see it with your actual data.</div>
+    <div style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px 16px;text-align:left">
+      <div style="font-size:10px;color:rgba(0,181,173,0.8);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;font-weight:700">Next steps</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;gap:12px"><div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#00B5AD,#2563EB);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;color:#fff">1</div><div style="font-size:13px;color:rgba(255,255,255,0.75)">Pick a time that works for you</div></div>
+        <div style="display:flex;align-items:center;gap:12px"><div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#00B5AD,#2563EB);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;color:#fff">2</div><div style="font-size:13px;color:rgba(255,255,255,0.75)">Join a 20-min live session with ${repName}</div></div>
+        <div style="display:flex;align-items:center;gap:12px"><div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#00B5AD,#2563EB);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;color:#fff">3</div><div style="font-size:13px;color:rgba(255,255,255,0.75)">Get answers and kick off your free trial</div></div>
       </div>
-    `;
-    if(shots.length>1){
-      appShotsInterval=setInterval(()=>{
-        currentAppShot=(currentAppShot+1)%shots.length;
-        goToShot(currentAppShot);
-      },3000);
-    }
-  } else {
-    rrEl.innerHTML=`
-      <div class="end-check-icon">
-        <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><path d="M6 18l9 9L30 9" stroke="#00B5AD" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </div>
-      <div class="end-tour-done">Tour complete</div>
-      <div class="end-right-headline">That's the full tour!</div>
-      <div class="end-right-sub">Ready to see this live for your team? Book a 20-min session and see it with your actual data.</div>
-      <div style="width:100%;background:#0d0d0d;border:1px solid #1f1f1f;border-radius:10px;padding:12px 14px;text-align:left">
-        <div style="font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Next steps</div>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <div style="display:flex;align-items:center;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:#00B5AD;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;color:#000">1</div><div style="font-size:12px;color:rgba(255,255,255,0.6)">Pick a time that works for you</div></div>
-          <div style="display:flex;align-items:center;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:#00B5AD;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;color:#000">2</div><div style="font-size:12px;color:rgba(255,255,255,0.6)">Join a 20-min live session with ${repName}</div></div>
-          <div style="display:flex;align-items:center;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:#00B5AD;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;color:#000">3</div><div style="font-size:12px;color:rgba(255,255,255,0.6)">Get answers and start your free trial</div></div>
-        </div>
-      </div>
-    `;
-  }
+    </div>
+  `;
 
   document.getElementById("btn-book").onclick=()=>window.open(calLink,"_blank");
   document.getElementById("end-screen").classList.add("show");
