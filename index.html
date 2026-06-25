@@ -21,7 +21,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
   display:flex;align-items:center;justify-content:space-between;
   background:rgba(0,0,0,0.96);border-bottom:1px solid #1a1a1a;z-index:1000;
 }
-.logo-text-wrap{display:flex;flex-direction:column;line-height:1}
+.logo-text-wrap{display:flex;flex-direction:column;line-height:1;border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:6px 12px}
 .logo-main{font-size:15px;font-weight:700;color:#fff;letter-spacing:-0.2px}
 .logo-main span{font-weight:300;color:rgba(255,255,255,0.5);font-size:13px;margin-left:3px}
 .logo-bytcp{font-size:10px;color:#2563EB;margin-top:1px}
@@ -87,35 +87,35 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 
 /* ── END SCREEN ── */
 #end-screen{display:none;background:#000;min-height:100vh}
-#end-screen.show{display:grid;grid-template-columns:1fr 1fr;min-height:100vh;align-items:start}
+#end-screen.show{display:grid;grid-template-columns:1fr 1fr;min-height:100vh;align-items:stretch}
 .end-left{
-  padding:52px 48px;display:flex;flex-direction:column;justify-content:flex-start;gap:28px;
-  border-right:1px solid #1a1a1a;
+  padding:48px 40px;display:flex;flex-direction:column;gap:20px;
+  border-right:1px solid #1a1a1a;overflow-y:auto;
 }
 .end-right{
-  padding:52px 48px;display:flex;flex-direction:column;justify-content:center;align-items:center;
-  text-align:center;background:#050505;
+  padding:48px 40px;display:flex;flex-direction:column;justify-content:center;align-items:center;
+  text-align:center;background:#050505;overflow-y:auto;
 }
 .end-right-inner{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  width:100%;max-width:340px;
+  width:100%;max-width:360px;gap:16px;
 }
 .end-logo{margin-bottom:32px}
-.end-headline{font-size:32px;font-weight:700;color:#fff;line-height:1.2;margin-bottom:12px}
-.end-sub{font-size:14px;color:rgba(255,255,255,0.4);line-height:1.7;margin-bottom:28px}
+.end-headline{font-size:26px;font-weight:700;color:#fff;line-height:1.2;margin-bottom:8px}
+.end-sub{font-size:13px;color:rgba(255,255,255,0.4);line-height:1.6;margin-bottom:0}
 .end-bullet{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
 .end-bdot{width:5px;height:5px;border-radius:50%;background:var(--teal);flex-shrink:0;margin-top:6px}
 .end-btext{font-size:13px;color:rgba(255,255,255,0.6);line-height:1.5}
 .end-rating-row{
   display:flex;align-items:center;gap:16px;
-  padding:14px 16px;background:#0d0d0d;border-radius:10px;
-  border:1px solid #1f1f1f;margin-top:24px;
+  padding:12px 14px;background:#0d0d0d;border-radius:10px;
+  border:1px solid #1f1f1f;margin-top:0;
 }
 .end-rating-num{font-size:28px;font-weight:700;color:#fff;line-height:1}
 .end-rating-of{font-size:13px;color:rgba(255,255,255,0.3)}
 .end-stars{font-size:15px;color:#F59E0B;letter-spacing:1px;display:block;line-height:1;margin-bottom:3px}
 .end-rating-label{font-size:11px;color:rgba(255,255,255,0.3)}
-.store-row{display:flex;gap:10px;margin-top:16px}
+.store-row{display:flex;gap:10px;margin-top:0}
 .store-btn{
   flex:1;display:flex;align-items:center;gap:9px;padding:11px 13px;
   border:1px solid #1f1f1f;border-radius:9px;cursor:pointer;
@@ -152,17 +152,17 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 
 /* Right side end screen */
 .end-check-icon{
-  width:64px;height:64px;border-radius:50%;
+  width:56px;height:56px;border-radius:50%;
   border:1.5px solid rgba(0,181,173,0.4);background:rgba(0,181,173,0.08);
-  display:flex;align-items:center;justify-content:center;margin:0 auto 18px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;margin:0 auto;flex-shrink:0;
 }
-.end-tour-done{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--teal);margin-bottom:10px;display:block}
-.end-right-headline{font-size:24px;font-weight:700;color:#fff;margin-bottom:8px;line-height:1.25;display:block}
-.end-right-sub{font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:28px;line-height:1.65;display:block}
+.end-tour-done{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--teal);margin-bottom:6px;display:block}
+.end-right-headline{font-size:22px;font-weight:700;color:#fff;margin-bottom:6px;line-height:1.25;display:block}
+.end-right-sub{font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:0;line-height:1.6;display:block}
 .btn-book{
-  width:100%;padding:14px;border:none;border-radius:10px;
+  width:100%;padding:13px;border:none;border-radius:10px;
   font-size:15px;font-weight:700;color:#fff;cursor:pointer;
-  background:var(--orange);margin-bottom:10px;letter-spacing:.2px;transition:filter .2s;display:block
+  background:var(--orange);letter-spacing:.2px;transition:filter .2s;display:block
 }
 .btn-book:hover{filter:brightness(.88)}
 .btn-restart{
@@ -486,12 +486,12 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 <!-- END SCREEN -->
 <div id="end-screen">
   <div class="end-left">
+    <div class="end-logo" id="end-logo"></div>
     <div>
-      <div class="end-logo" id="end-logo"></div>
       <div class="end-headline">Book a slot<br>that works for you</div>
       <div class="end-sub" id="end-sub">See how Humanity Schedule automates shift planning and gives your team real-time access from anywhere.</div>
-      <div id="end-bullets"></div>
     </div>
+    <div id="end-bullets"></div>
     <div id="end-bottom-left"></div>
   </div>
   <div class="end-right">
@@ -968,18 +968,18 @@ function showEndScreen(){
   // Logo
   let logoHtml="";
   if(p.name==="WhenToWork"){
-    logoHtml=`<div style="margin-bottom:8px"><span style="font-size:26px;font-weight:700;color:#fff">WhenToWork</span></div><div style="font-size:12px;color:rgba(255,255,255,0.4)">Employee Scheduling</div>`;
+    logoHtml=`<div style="display:inline-block;border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 14px"><span style="font-size:22px;font-weight:700;color:#fff">WhenToWork</span><br><span style="font-size:11px;color:rgba(255,255,255,0.4)">Employee Scheduling</span></div>`;
   } else {
-    logoHtml=`<div style="margin-bottom:4px"><span style="font-size:26px;font-weight:700;color:#fff">${p.name}</span><span style="font-size:16px;font-weight:300;color:rgba(255,255,255,0.5);margin-left:6px">${p.sub}</span></div>${p.bytcp?'<div style="font-size:12px;color:#2563EB">by tcp™</div>':""}`;
+    logoHtml=`<div style="display:inline-block;border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 14px"><span style="font-size:22px;font-weight:700;color:#fff">${p.name}</span><span style="font-size:13px;font-weight:300;color:rgba(255,255,255,0.5);margin-left:5px">${p.sub}</span>${p.bytcp?'<br><span style="font-size:11px;color:#2563EB">by tcp™</span>':""}</div>`;
   }
   document.getElementById("end-logo").innerHTML=logoHtml;
   document.getElementById("end-sub").textContent=p.sub_text;
 
   // Bullets + what to expect section
   const whatToExpect=`
-    <div style="background:#0d0d0d;border:1px solid #1f1f1f;border-radius:10px;padding:16px 18px;margin-top:6px">
-      <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">What to expect in the demo</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
+    <div style="background:#0d0d0d;border:1px solid #1f1f1f;border-radius:10px;padding:14px 16px;">
+      <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">What to expect in the demo</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
         <div style="display:flex;align-items:center;gap:10px"><div style="width:28px;height:28px;border-radius:6px;background:#111;border:1px solid #1f1f1f;display:flex;align-items:center;justify-content:center;flex-shrink:0">🕐</div><div style="font-size:12px;color:rgba(255,255,255,0.55)"><strong style="color:#fff">20 minutes</strong> — no fluff, just the features that matter to you</div></div>
         <div style="display:flex;align-items:center;gap:10px"><div style="width:28px;height:28px;border-radius:6px;background:#111;border:1px solid #1f1f1f;display:flex;align-items:center;justify-content:center;flex-shrink:0">🎯</div><div style="font-size:12px;color:rgba(255,255,255,0.55)"><strong style="color:#fff">Live walkthrough</strong> — with your actual team data, not a generic sandbox</div></div>
         <div style="display:flex;align-items:center;gap:10px"><div style="width:28px;height:28px;border-radius:6px;background:#111;border:1px solid #1f1f1f;display:flex;align-items:center;justify-content:center;flex-shrink:0">💬</div><div style="font-size:12px;color:rgba(255,255,255,0.55)"><strong style="color:#fff">Q&A included</strong> — ask anything about pricing, setup, or onboarding</div></div>
@@ -1049,7 +1049,7 @@ function showEndScreen(){
       <div class="end-tour-done">Tour complete</div>
       <div class="end-right-headline">That's the full tour!</div>
       <div class="end-right-sub">Ready to see this live for your team? Book a 20-min session and see it with your actual data.</div>
-      <div style="width:100%;background:#0d0d0d;border:1px solid #1f1f1f;border-radius:10px;padding:14px 16px;margin-bottom:20px;text-align:left">
+      <div style="width:100%;background:#0d0d0d;border:1px solid #1f1f1f;border-radius:10px;padding:12px 14px;text-align:left">
         <div style="font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Next steps</div>
         <div style="display:flex;flex-direction:column;gap:8px">
           <div style="display:flex;align-items:center;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:#00B5AD;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;color:#000">1</div><div style="font-size:12px;color:rgba(255,255,255,0.6)">Pick a time that works for you</div></div>
