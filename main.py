@@ -35,6 +35,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS demos (
             id SERIAL PRIMARY KEY,
             slug TEXT UNIQUE NOT NULL,
+            product TEXT NOT NULL DEFAULT 'humanity',
             title TEXT NOT NULL,
             description TEXT,
             created_at TIMESTAMP DEFAULT NOW()
@@ -84,6 +85,7 @@ def compress_image(content: bytes, mime: str) -> tuple[str, str]:
         return f"data:{mime};base64,{b64}", mime
 
 class DemoCreate(BaseModel):
+    product: Optional[str] = "humanity"
     slug: str
     title: str
     description: Optional[str] = ""
@@ -108,8 +110,8 @@ def create_demo(demo: DemoCreate):
     cur = conn.cursor()
     try:
         cur.execute(
-            "INSERT INTO demos (slug, title, description) VALUES (%s, %s, %s) RETURNING *",
-            (demo.slug, demo.title, demo.description)
+            "INSERT INTO demos (slug, title, description, product) VALUES (%s, %s, %s, %s) RETURNING *",
+            (demo.slug, demo.title, demo.description, demo.product or "humanity")
         )
         row = dict(cur.fetchone())
         conn.commit()
