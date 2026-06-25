@@ -353,6 +353,16 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
           <label>Your Calendar / Booking Link</label>
           <input type="url" id="new-cal" placeholder="https://hello.tcpsoftware.com/c/your-link" value="https://hello.tcpsoftware.com/c/aaron-josetcpsoftware-com"/>
         </div>
+        <div class="form-grid">
+          <div class="form-row">
+            <label>Your Name</label>
+            <input type="text" id="new-rep-name" placeholder="e.g. Aaron Jose" value="Aaron Jose"/>
+          </div>
+          <div class="form-row">
+            <label>Your Title</label>
+            <input type="text" id="new-rep-title" placeholder="e.g. Senior Account Executive" value="Senior Account Executive"/>
+          </div>
+        </div>
         <button class="btn-primary" onclick="createDemo()" id="btn-create-demo">Create Demo</button>
         <div id="create-msg"></div>
       </div>
@@ -516,13 +526,13 @@ const PRODUCTS = {
     sub_text:"See how Humanity Schedule automates shift planning, closes coverage gaps, and gives your team real-time access from anywhere.",
     rating:{show:true,num:"4.9",of:"/ 5",stars:"★★★★★",label:"46K ratings",src:"App Store & Google Play"},
     gplay:"https://play.google.com/store/apps/details?id=com.humanity.apps.humanityV3",
-    astore:"https://apps.apple.com/us/app/humanity-schedule-by-tcp/id1199006408"
+    astore:"https://apps.apple.com/us/app/humanity-time-by-tcp/id6661013219"
   },
   "humanity-time":{
     name:"Humanity",sub:"Time",bytcp:true,
     bullets:["Built for teams up to 200 employees","Accurate time tracking and labor cost control","Live session with your actual business data"],
     sub_text:"See how Humanity Time helps small businesses track time accurately, control labor costs, and stay compliant without complexity.",
-    rating:{show:true,num:"4.1",of:"/ 5",stars:"★★★★☆",label:"App Store & Google Play"},
+    rating:{show:true,num:"4.1",of:"/ 5",stars:"★★★★☆",label:"App Store & Google Play",src:"App Store & Google Play"},
     gplay:"https://play.google.com/store/apps/details?id=com.timeco.android2",
     astore:"https://apps.apple.com/us/app/humanity-schedule-by-tcp/id1199006408"
   },
@@ -530,7 +540,7 @@ const PRODUCTS = {
     name:"WhenToWork",sub:"",bytcp:false,
     bullets:["Fast online scheduling for any size team","Employee self-service: trades, time off, messages","Live walkthrough with your team setup"],
     sub_text:"See how WhenToWork makes employee scheduling fast — online access, shift trades, time off, and messaging all in one place.",
-    rating:{show:true,num:"4.1",of:"/ 5",stars:"★★★★☆",label:"App Store & Google Play"},
+    rating:{show:true,num:"4.1",of:"/ 5",stars:"★★★★☆",label:"App Store & Google Play",src:"App Store & Google Play"},
     gplay:"https://play.google.com/store/apps/details?id=com.whentowork.webview",
     astore:"https://apps.apple.com/us/app/whentowork-employee-scheduling/id1035199750"
   }
@@ -620,12 +630,14 @@ async function createDemo(){
   const slug=document.getElementById("new-slug").value.trim().toLowerCase().replace(/\s+/g,"-");
   const desc=document.getElementById("new-desc").value.trim();
   const cal=document.getElementById("new-cal").value.trim()||"https://hello.tcpsoftware.com/c/aaron-josetcpsoftware-com";
+  const repName=document.getElementById("new-rep-name").value.trim()||"Aaron Jose";
+  const repTitle=document.getElementById("new-rep-title").value.trim()||"Senior Account Executive";
   if(!title||!slug){showMsg("create-msg","Title and slug are required.","error");return}
   const btn=document.getElementById("btn-create-demo");
   btn.innerHTML='<span class="spinner"></span>Creating...';btn.disabled=true;
   const res=await fetch(API+"/api/demos",{
     method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({slug,title,description:desc,product:selectedProduct,calendar_link:cal})
+    body:JSON.stringify({slug,title,description:desc,product:selectedProduct,calendar_link:cal,rep_name:repName,rep_title:repTitle})
   });
   btn.innerHTML="Create Demo";btn.disabled=false;
   if(res.ok){
@@ -968,10 +980,22 @@ function showEndScreen(){
     <div class="end-bullet"><div class="end-bdot"></div><div class="end-btext">${b}</div></div>
   `).join("");
 
-  // Bottom left: rating or app screenshots
+  // Bottom left: host card + rating + store buttons
+  const repName=demoData.rep_name||"Aaron Jose";
+  const repTitle=demoData.rep_title||"Senior Account Executive";
   const blEl=document.getElementById("end-bottom-left");
+  const hostCard=`
+    <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#0d0d0d;border-radius:10px;border:1px solid #1f1f1f;margin-bottom:14px">
+      <div style="width:44px;height:44px;border-radius:50%;background:#00B5AD;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;font-weight:700;color:#fff">${repName.charAt(0)}</div>
+      <div>
+        <div style="font-size:14px;font-weight:700;color:#fff">${repName}</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px">${repTitle}</div>
+        <div style="font-size:11px;color:#00B5AD;margin-top:3px">● Available for a live demo</div>
+      </div>
+    </div>
+  `;
   if(p.rating.show){
-    blEl.innerHTML=`
+    blEl.innerHTML=hostCard+`
       <div class="end-rating-row">
         <div style="text-align:center;padding-right:14px;border-right:1px solid #1f1f1f">
           <div class="end-rating-num">${p.rating.num} <span class="end-rating-of">${p.rating.of}</span></div>
@@ -985,7 +1009,7 @@ function showEndScreen(){
       ${storeButtons(p)}
     `;
   } else {
-    blEl.innerHTML=storeButtons(p);
+    blEl.innerHTML=hostCard+storeButtons(p);
   }
 
   // Right side: app screenshots or check icon
