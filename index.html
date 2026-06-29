@@ -39,7 +39,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 .progress-bar-bg{flex:1;height:2px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden}
 .progress-bar-fill{height:100%;background:linear-gradient(90deg,#00B5AD,#2563EB);border-radius:2px;transition:width 0.4s ease}
 .progress-label{font-size:11px;color:rgba(255,255,255,0.35);white-space:nowrap}
-.player-scroll-area{margin-top:52px;position:relative;width:100%}
+.player-scroll-area{position:relative;width:100%}
 #player-img{display:block;width:100%;height:auto;user-select:none;pointer-events:none}
 
 /* Hotspot */
@@ -337,6 +337,92 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 }
 .gate-feature-dot{width:6px;height:6px;border-radius:50%;background:#00B5AD;flex-shrink:0}
 
+
+/* ── DESKTOP MONITOR FRAME ── */
+.monitor-wrap{
+  margin-top:52px;
+  padding:32px 40px 28px;
+  background:#050a14;
+  min-height:calc(100vh - 52px);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+}
+.monitor-outer{
+  width:100%;
+  max-width:1200px;
+  background:#0a0a0a;
+  border-radius:14px;
+  padding:10px;
+  border:2px solid rgba(0,181,173,0.45);
+  box-shadow:
+    0 0 0 1px rgba(0,181,173,0.12),
+    0 0 40px rgba(0,181,173,0.1),
+    0 24px 80px rgba(0,0,0,0.7);
+  position:relative;
+}
+.monitor-camera{
+  display:flex;justify-content:center;
+  padding:4px 0 6px;
+}
+.monitor-camera-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:rgba(0,181,173,0.3);
+  border:1.5px solid rgba(0,181,173,0.5);
+}
+.monitor-screen{
+  border-radius:8px;
+  overflow:hidden;
+  border:1px solid rgba(0,181,173,0.15);
+  position:relative;
+}
+.monitor-topbar{
+  background:linear-gradient(90deg,#1A2B4A,#0d2240);
+  padding:8px 14px;
+  display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid rgba(0,181,173,0.15);
+  position:relative;
+  z-index:10;
+}
+.monitor-dots{display:flex;gap:5px;flex-shrink:0}
+.monitor-dot{width:10px;height:10px;border-radius:50%}
+.monitor-dot.red{background:rgba(0,181,173,0.25);border:1.5px solid rgba(0,181,173,0.4)}
+.monitor-dot.yellow{background:rgba(0,181,173,0.25);border:1.5px solid rgba(0,181,173,0.4)}
+.monitor-dot.green{background:#00B5AD;border:1.5px solid rgba(0,181,173,0.8)}
+.monitor-urlbar{
+  flex:1;
+  background:rgba(0,181,173,0.07);
+  border:1px solid rgba(0,181,173,0.15);
+  border-radius:6px;
+  padding:4px 12px;
+  font-size:11px;
+  color:rgba(0,181,173,0.55);
+  text-align:center;
+  font-family:monospace;
+  letter-spacing:.3px;
+}
+.monitor-live-badge{
+  font-size:9px;font-weight:700;
+  color:#00B5AD;
+  background:rgba(0,181,173,0.1);
+  padding:3px 8px;border-radius:4px;
+  border:1px solid rgba(0,181,173,0.3);
+  letter-spacing:.5px;
+  flex-shrink:0;
+}
+.monitor-content{
+  position:relative;
+  background:#000;
+}
+.monitor-content img{
+  display:block;
+  width:100%;
+  height:auto;
+  user-select:none;
+  pointer-events:none;
+}
+
 .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;margin-right:6px;vertical-align:middle}
 @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -563,18 +649,36 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
     </div>
     <div style="width:80px"></div>
   </div>
-  <!-- Desktop slide -->
-  <div class="player-scroll-area" id="player-scroll-area" style="display:none">
-    <img id="player-img" src="" alt=""/>
-    <div class="hotspot" id="hotspot">
-      <div class="hotspot-ring"><div class="hotspot-dot"></div></div>
-      <div class="tooltip-box pos-right" id="tooltip-box">
-        <div class="tooltip-step" id="tooltip-step">Step 1</div>
-        <div class="tooltip-title" id="tooltip-title"></div>
-        <div class="tooltip-body" id="tooltip-body"></div>
-        <div class="tooltip-actions">
-          <button class="btn-prev" id="btn-prev" onclick="prevStep()">← Back</button>
-          <button class="btn-next" id="btn-next" onclick="nextStep()">Next →</button>
+  <!-- Desktop slide — monitor frame -->
+  <div id="player-scroll-area" style="display:none">
+    <div class="monitor-wrap">
+      <div class="monitor-outer">
+        <div class="monitor-camera"><div class="monitor-camera-dot"></div></div>
+        <div class="monitor-screen">
+          <div class="monitor-topbar">
+            <div class="monitor-dots">
+              <div class="monitor-dot red"></div>
+              <div class="monitor-dot yellow"></div>
+              <div class="monitor-dot green"></div>
+            </div>
+            <div class="monitor-urlbar" id="monitor-urlbar">app.humanity.com/dashboard</div>
+            <div class="monitor-live-badge">LIVE DEMO</div>
+          </div>
+          <div class="monitor-content">
+            <img id="player-img" src="" alt=""/>
+            <div class="hotspot" id="hotspot">
+              <div class="hotspot-ring"><div class="hotspot-dot"></div></div>
+              <div class="tooltip-box pos-right" id="tooltip-box">
+                <div class="tooltip-step" id="tooltip-step">Step 1</div>
+                <div class="tooltip-title" id="tooltip-title"></div>
+                <div class="tooltip-body" id="tooltip-body"></div>
+                <div class="tooltip-actions">
+                  <button class="btn-prev" id="btn-prev" onclick="prevStep()">← Back</button>
+                  <button class="btn-next" id="btn-next" onclick="nextStep()">Next →</button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -972,6 +1076,12 @@ async function addSlide(){
 }
 
 // ── PLAYER ──
+const PRODUCT_URLS = {
+  "humanity": "app.humanity.com/dashboard",
+  "humanity-time": "app.humanitytime.com/dashboard",
+  "whentowork": "app.whentowork.com/schedule"
+};
+
 function renderPlayerLogo(product){
   const p=PRODUCTS[product]||PRODUCTS.humanity;
   const el=document.getElementById("player-logo-area");
@@ -980,6 +1090,9 @@ function renderPlayerLogo(product){
   } else {
     el.innerHTML=`<div class="logo-text-wrap"><span class="logo-main">${p.name}<span>${p.sub}</span></span>${p.bytcp?'<span class="logo-bytcp">by tcp™</span>':''}</div>`;
   }
+  // Update monitor URL bar
+  const urlBar = document.getElementById("monitor-urlbar");
+  if(urlBar) urlBar.textContent = PRODUCT_URLS[product] || "app.humanity.com/dashboard";
 }
 
 async function loadDemo(slug){
