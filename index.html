@@ -20,7 +20,7 @@ document.getElementsByTagName("script")[0].parentNode.insertBefore(s,document.ge
   --teal:#00B5AD;--navy:#1A2B4A;--orange:#FF6B35;
   --white:#fff;--gbg:#F5F7FA;--gborder:#E2E8F0;--gtext:#64748B;--text:#1E293B;
 }
-html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var(--gbg);color:var(--text)}
+html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var(--gbg);color:var(--text)} #player-view{background:#050a14}
 .view{display:none}
 .view.active{display:flex}
 
@@ -346,8 +346,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
   display:flex;
   align-items:flex-start;
   justify-content:center;
-  padding:32px 48px 48px;
-  min-height:calc(100vh - 52px);
+  padding:32px 48px;
 }
 .monitor-outer{
   width:100%;
@@ -1202,41 +1201,46 @@ function renderStep(){
 
     const hotEl=document.getElementById("hotspot");
     hotEl.style.display="block";
-    // Position hotspot using fixed viewport coords based on image position
     const positionHotspot = () => {
       const img = document.getElementById("player-img");
       const scroller = document.getElementById("monitor-scroll");
       if(!img || !scroller) return;
       const imgRect = img.getBoundingClientRect();
-      const scrollTop = scroller.scrollTop;
-      const imgHeight = img.offsetHeight;
-      const imgWidth = img.offsetWidth;
-      const hotX = imgRect.left + (h.x/100) * imgWidth;
-      const hotY = imgRect.top + (h.y/100) * imgHeight - scroller.scrollTop + scroller.scrollTop;
-      // Recalculate using actual rendered position
-      const monitorRect = scroller.getBoundingClientRect();
-      const relY = (h.y/100) * imgHeight;
-      const fixedY = monitorRect.top + relY - scroller.scrollTop;
-      const fixedX = imgRect.left + (h.x/100) * imgWidth;
+      const fixedX = imgRect.left + (h.x/100) * imgRect.width;
+      const fixedY = imgRect.top  + (h.y/100) * imgRect.height;
       hotEl.style.left = fixedX + "px";
-      hotEl.style.top = fixedY + "px";
+      hotEl.style.top  = fixedY + "px";
     };
     positionHotspot();
-    // Reposition on scroll
-    const scroller = document.getElementById("monitor-scroll");
-    if(scroller) {
-      scroller._hotspotHandler && scroller.removeEventListener("scroll", scroller._hotspotHandler);
-      scroller._hotspotHandler = positionHotspot;
-      scroller.addEventListener("scroll", positionHotspot);
+    const scroller2 = document.getElementById("monitor-scroll");
+    if(scroller2){
+      scroller2._hotspotHandler && scroller2.removeEventListener("scroll", scroller2._hotspotHandler);
+      scroller2._hotspotHandler = positionHotspot;
+      scroller2.addEventListener("scroll", positionHotspot);
     }
 
     const tb=document.getElementById("tooltip-box");
-    // Auto-flip: if hotspot is in bottom 35% of image, force tooltip above
     let tpos = h.position;
-    if(h.y > 65 && tpos === "bottom") tpos = "top";
-    if(h.y > 75) tpos = "top";
-    // If hotspot is in right 60%, force tooltip left
-    if(h.x > 60 && tpos === "right") tpos = "left";
+    // Flip based on viewport position after render
+    requestAnimationFrame(()=>{
+      const hotEl2 = document.getElementById("hotspot");
+      const tbEl = document.getElementById("tooltip-box");
+      if(!hotEl2 || !tbEl) return;
+      const hx = parseFloat(hotEl2.style.left)||0;
+      const hy = parseFloat(hotEl2.style.top)||0;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const tw = 290; const th = 200;
+      let pos = h.position;
+      if(pos==="right"  && hx + tw + 60 > vw) pos = "left";
+      if(pos==="left"   && hx - tw - 60 < 0)  pos = "right";
+      if(pos==="bottom" && hy + th + 60 > vh)  pos = "top";
+      if(pos==="top"    && hy - th - 60 < 52)  pos = "bottom";
+      // Default fallbacks based on position
+      if(hy + th + 60 > vh && pos !== "top") pos = "top";
+      if(hx + tw + 60 > vw && pos === "right") pos = "left";
+      tbEl.className = "tooltip-box pos-"+pos;
+    });
     tb.className="tooltip-box pos-"+tpos;
     document.getElementById("tooltip-step").textContent="Step "+globalStep+" of "+totalSteps;
     document.getElementById("tooltip-title").textContent=h.title;
