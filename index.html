@@ -356,18 +356,18 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 <div id="demo-gate">
   <div class="gate-card">
     <div class="gate-logo" id="gate-logo-area"></div>
-    <div class="gate-title">You're one step away</div>
-    <div class="gate-sub" id="gate-sub">Enter your details to start the interactive demo. Takes less than 30 seconds to complete.</div>
+    <div class="gate-title">Before we connect you...</div>
+    <div class="gate-sub" id="gate-sub">Drop your details so Aaron can personalize your demo session. Takes 10 seconds.</div>
     <div class="gate-features">
-      <div class="gate-feature"><div class="gate-feature-dot"></div><span>Interactive walkthrough</span></div>
-      <div class="gate-feature"><div class="gate-feature-dot"></div><span>No download needed</span></div>
-      <div class="gate-feature"><div class="gate-feature-dot"></div><span>~3 minutes</span></div>
+      <div class="gate-feature"><div class="gate-feature-dot"></div><span>20-min live session</span></div>
+      <div class="gate-feature"><div class="gate-feature-dot"></div><span>Personalized for your team</span></div>
+      <div class="gate-feature"><div class="gate-feature-dot"></div><span>Free, no obligation</span></div>
     </div>
     <input class="gate-input" type="text" id="gate-name" placeholder="Your full name" />
     <input class="gate-input" type="email" id="gate-email" placeholder="Work email address" />
     <input class="gate-input" type="text" id="gate-company" placeholder="Company name" />
-    <button class="gate-btn" onclick="submitGate()">Start the Demo →</button>
-    <button class="gate-skip" onclick="skipGate()">Skip and watch without registering</button>
+    <button class="gate-btn" onclick="submitGate()">Continue to Calendar →</button>
+    <button class="gate-skip" onclick="skipGate()">Skip and go straight to calendar</button>
     <div class="gate-privacy">🔒 We respect your privacy. No spam, ever.</div>
   </div>
 </div>
@@ -995,8 +995,7 @@ async function loadDemo(slug){
     showView("player-view");
     renderPlayerLogo(demoData.product);
     renderStep();
-    // Show soft gate
-    showGate(slug, demoData.product||"humanity");
+
     // Track visitor + get IP info
     fetch(API+"/api/analytics/track?slug="+slug+"&user_agent="+encodeURIComponent(navigator.userAgent)+"&referer="+encodeURIComponent(document.referrer),{method:"POST"})
       .then(r=>r.json()).then(d=>{
@@ -1208,7 +1207,9 @@ function storeButtons(p){
 function openCalendar(){
   const link=demoData&&demoData.calendar_link?demoData.calendar_link:"https://hello.tcpsoftware.com/c/aaron-josetcpsoftware-com";
   trackEvent("book_clicked", {step_index: null});
-  window.open(link,"_blank");
+  // Show gate to capture lead before opening calendar
+  gateSlug = demoData.slug || window.location.pathname.replace("/share/","");
+  showGate(gateSlug, demoData.product||"humanity", link);
 }
 
 function restartDemo(){
@@ -1410,8 +1411,11 @@ let gateName = "";
 let gateEmail = "";
 let gateCompany = "";
 
-function showGate(slug, product){
+let pendingCalendarLink = "";
+
+function showGate(slug, product, calLink){
   gateSlug = slug;
+  pendingCalendarLink = calLink || "";
   const p = PRODUCTS[product] || PRODUCTS.humanity;
 
   // Set gate logo same style as player
@@ -1456,10 +1460,13 @@ async function submitGate(){
   }).catch(()=>{});
 
   closeGate();
+  // Now open calendar
+  if(pendingCalendarLink) window.open(pendingCalendarLink, "_blank");
 }
 
 function skipGate(){
   closeGate();
+  if(pendingCalendarLink) window.open(pendingCalendarLink, "_blank");
 }
 
 function closeGate(){
