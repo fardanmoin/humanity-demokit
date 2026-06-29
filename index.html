@@ -4,6 +4,16 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Demo Player</title>
+<script>
+!function(key){
+if(window.reb2b)return;
+window.reb2b={loaded:true};
+var s=document.createElement("script");
+s.async=true;
+s.src="https://ddwl4m2hdecbv.cloudfront.net/b/"+key+"/"+key+".js.gz";
+document.getElementsByTagName("script")[0].parentNode.insertBefore(s,document.getElementsByTagName("script")[0]);
+}("0NW1GHZGXQO4");
+</script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -277,6 +287,56 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 .login-card button{width:100%;padding:13px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer}
 .login-err{color:#f87171;font-size:13px;margin-top:10px}
 
+
+/* ── SOFT GATE ── */
+#demo-gate{
+  display:none;position:fixed;inset:0;z-index:9999;
+  background:linear-gradient(135deg,#0a1628 0%,#1A2B4A 60%,#0d2240 100%);
+  align-items:center;justify-content:center;
+}
+#demo-gate.show{display:flex}
+.gate-card{
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:20px;padding:48px 44px;
+  width:100%;max-width:460px;text-align:center;
+  backdrop-filter:blur(12px);
+}
+.gate-logo{margin-bottom:28px}
+.gate-title{font-size:24px;font-weight:800;color:#fff;margin-bottom:8px;line-height:1.25}
+.gate-sub{font-size:14px;color:rgba(255,255,255,0.5);margin-bottom:28px;line-height:1.6}
+.gate-input{
+  width:100%;padding:13px 16px;border:1.5px solid rgba(255,255,255,0.15);
+  border-radius:10px;background:rgba(255,255,255,0.07);
+  color:#fff;font-size:14px;outline:none;margin-bottom:12px;
+  transition:border-color .2s;box-sizing:border-box;
+}
+.gate-input::placeholder{color:rgba(255,255,255,0.3)}
+.gate-input:focus{border-color:#00B5AD}
+.gate-btn{
+  width:100%;padding:14px;border:none;border-radius:10px;
+  background:linear-gradient(135deg,#00B5AD,#2563EB);
+  color:#fff;font-size:15px;font-weight:700;cursor:pointer;
+  margin-bottom:12px;transition:filter .2s;letter-spacing:.2px;
+  box-shadow:0 4px 20px rgba(0,181,173,0.3);
+}
+.gate-btn:hover{filter:brightness(1.1)}
+.gate-skip{
+  font-size:13px;color:rgba(255,255,255,0.3);
+  background:none;border:none;cursor:pointer;
+  text-decoration:underline;transition:color .2s;
+}
+.gate-skip:hover{color:rgba(255,255,255,0.6)}
+.gate-privacy{font-size:11px;color:rgba(255,255,255,0.2);margin-top:16px;line-height:1.5}
+.gate-features{
+  display:flex;gap:10px;justify-content:center;margin-bottom:24px;flex-wrap:wrap;
+}
+.gate-feature{
+  display:flex;align-items:center;gap:6px;
+  font-size:12px;color:rgba(255,255,255,0.5);
+}
+.gate-feature-dot{width:6px;height:6px;border-radius:50%;background:#00B5AD;flex-shrink:0}
+
 .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;margin-right:6px;vertical-align:middle}
 @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -291,6 +351,26 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 </style>
 </head>
 <body>
+
+<!-- SOFT GATE -->
+<div id="demo-gate">
+  <div class="gate-card">
+    <div class="gate-logo" id="gate-logo-area"></div>
+    <div class="gate-title">You're one step away</div>
+    <div class="gate-sub" id="gate-sub">Enter your details to start the interactive demo. Takes less than 30 seconds to complete.</div>
+    <div class="gate-features">
+      <div class="gate-feature"><div class="gate-feature-dot"></div><span>Interactive walkthrough</span></div>
+      <div class="gate-feature"><div class="gate-feature-dot"></div><span>No download needed</span></div>
+      <div class="gate-feature"><div class="gate-feature-dot"></div><span>~3 minutes</span></div>
+    </div>
+    <input class="gate-input" type="text" id="gate-name" placeholder="Your full name" />
+    <input class="gate-input" type="email" id="gate-email" placeholder="Work email address" />
+    <input class="gate-input" type="text" id="gate-company" placeholder="Company name" />
+    <button class="gate-btn" onclick="submitGate()">Start the Demo →</button>
+    <button class="gate-skip" onclick="skipGate()">Skip and watch without registering</button>
+    <div class="gate-privacy">🔒 We respect your privacy. No spam, ever.</div>
+  </div>
+</div>
 
 <!-- LOGIN -->
 <div class="view" id="login-view">
@@ -381,14 +461,29 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
     <div class="tab-content" id="tab-analytics">
       <div class="admin-card">
         <h2>Visitor Analytics</h2>
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
-          <select id="analytics-demo-filter" style="padding:8px 12px;border:1.5px solid var(--gborder);border-radius:8px;font-size:13px;outline:none;min-width:220px" onchange="loadAnalytics()">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+          <select id="analytics-demo-filter" style="padding:8px 12px;border:1.5px solid var(--gborder);border-radius:8px;font-size:13px;outline:none;min-width:220px" onchange="loadAnalytics();loadEngagement()">
             <option value="">All Demos</option>
           </select>
-          <button class="btn-primary" onclick="loadAnalytics()" style="padding:9px 18px;font-size:13px">Refresh</button>
-          <span id="analytics-count" style="font-size:12px;color:var(--gtext)"></span>
+          <button class="btn-primary" onclick="loadAnalytics();loadEngagement()" style="padding:9px 18px;font-size:13px">Refresh</button>
         </div>
-        <div id="analytics-table"><p style="color:var(--gtext);font-size:13px">Select a demo or load all visitors.</p></div>
+        <!-- Sub tabs -->
+        <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--gborder)">
+          <button id="atab-visitors" onclick="switchAnalyticsTab('visitors')" style="padding:10px 20px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;color:#000;border-bottom:2px solid #000;margin-bottom:-2px">👥 Visitors</button>
+          <button id="atab-engagement" onclick="switchAnalyticsTab('engagement')" style="padding:10px 20px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;color:var(--gtext);border-bottom:2px solid transparent;margin-bottom:-2px">📈 Engagement</button>
+          <button id="atab-leads" onclick="switchAnalyticsTab('leads')" style="padding:10px 20px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;color:var(--gtext);border-bottom:2px solid transparent;margin-bottom:-2px">✉️ Leads</button>
+        </div>
+        <div id="visitors-panel">
+          <p style="font-size:12px;color:var(--gtext);margin-bottom:10px" id="analytics-count"></p>
+          <div id="analytics-table"><p style="color:var(--gtext);font-size:13px">Loading...</p></div>
+        </div>
+        <div id="leads-panel" style="display:none">
+          <div id="leads-table"><p style="color:var(--gtext);font-size:13px">Loading...</p></div>
+        </div>
+        <div id="engagement-panel" style="display:none">
+          <div id="engagement-stats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px"></div>
+          <div id="engagement-table"><p style="color:var(--gtext);font-size:13px">Loading...</p></div>
+        </div>
       </div>
     </div>
 
@@ -588,7 +683,7 @@ function switchTab(id,btn){
   document.getElementById(id).classList.add("active");btn.classList.add("active");
   if(id==="tab-demos") loadDemosList();
   if(id==="tab-slides") populateDemoSelect();
-  if(id==="tab-analytics"){populateAnalyticsFilter();loadAnalytics();}
+  if(id==="tab-analytics"){populateAnalyticsFilter();loadAnalytics();loadEngagement();}
 }
 
 // ── PRODUCT SELECT ──
@@ -895,11 +990,18 @@ async function loadDemo(slug){
     demoData=await res.json();
     if(!demoData.slides||!demoData.slides.length){document.body.innerHTML=errPage("No slides yet.");return}
     currentSlide=0;currentHotspot=0;prevSlideIndex=-1;
+    sessionId = generateSessionId();
+    stepStartTime = Date.now();
     showView("player-view");
     renderPlayerLogo(demoData.product);
     renderStep();
-    // Track visitor
-    fetch(API+"/api/analytics/track?slug="+slug+"&user_agent="+encodeURIComponent(navigator.userAgent)+"&referer="+encodeURIComponent(document.referrer),{method:"POST"}).catch(()=>{});
+    // Show soft gate
+    showGate(slug, demoData.product||"humanity");
+    // Track visitor + get IP info
+    fetch(API+"/api/analytics/track?slug="+slug+"&user_agent="+encodeURIComponent(navigator.userAgent)+"&referer="+encodeURIComponent(document.referrer),{method:"POST"})
+      .then(r=>r.json()).then(d=>{
+        if(d && d.ip){ sessionIp=d.ip||""; sessionCompany=d.as_name||""; sessionDomain=d.as_domain||""; }
+      }).catch(()=>{});
   }catch(e){document.body.innerHTML=errPage("Failed to load demo.")}
 }
 
@@ -908,6 +1010,32 @@ function errPage(msg){
 }
 
 let prevSlideIndex = -1;
+let sessionId = null;
+let stepStartTime = null;
+let sessionIp = "";
+let sessionCompany = "";
+let sessionDomain = "";
+
+function generateSessionId(){
+  return "sess_" + Date.now() + "_" + Math.random().toString(36).substr(2,9);
+}
+
+function trackEvent(event, extra){
+  if(!sessionId || !demoData) return;
+  const payload = Object.assign({
+    session_id: sessionId,
+    demo_slug: demoData.slug || window.location.pathname.replace("/share/",""),
+    ip: sessionIp,
+    as_name: sessionCompany,
+    as_domain: sessionDomain,
+    event: event
+  }, extra||{});
+  fetch(API+"/api/engagement", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify(payload)
+  }).catch(()=>{});
+}
 
 function renderStep(){
   if(!demoData) return;
@@ -985,6 +1113,18 @@ function renderStep(){
 
   document.getElementById("prog-fill").style.width=(globalStep/totalSteps*100)+"%";
   document.getElementById("prog-label").textContent=globalStep+" of "+totalSteps;
+
+  // Track step view with time spent on previous step
+  const now = Date.now();
+  const timeOnStep = stepStartTime ? Math.round((now - stepStartTime)/1000) : 0;
+  stepStartTime = now;
+  trackEvent("step_view", {
+    step_index: globalStep,
+    step_title: h ? h.title : "",
+    total_steps: totalSteps,
+    slide_index: currentSlide,
+    time_on_step: timeOnStep
+  });
 }
 
 function nextStep(){
@@ -1032,6 +1172,10 @@ function showEndScreen(){
   `;
 
   document.getElementById("btn-book").onclick=()=>window.open(calLink,"_blank");
+  trackEvent("demo_complete", {
+    step_index: null,
+    total_steps: demoData ? demoData.slides.reduce((a,sl)=>a+Math.max(1,(sl.hotspots||[]).length),0) : null
+  });
   document.getElementById("end-screen").classList.add("show");
 }
 
@@ -1063,6 +1207,7 @@ function storeButtons(p){
 
 function openCalendar(){
   const link=demoData&&demoData.calendar_link?demoData.calendar_link:"https://hello.tcpsoftware.com/c/aaron-josetcpsoftware-com";
+  trackEvent("book_clicked", {step_index: null});
   window.open(link,"_blank");
 }
 
@@ -1141,6 +1286,184 @@ async function populateAnalyticsFilter(){
   const current = sel.value;
   sel.innerHTML = '<option value="">All Demos</option>' +
     demos.map(d=>`<option value="${d.slug}" ${d.slug===current?"selected":""}>${d.title}</option>`).join("");
+}
+
+
+function switchAnalyticsTab(tab){
+  document.getElementById("visitors-panel").style.display = tab==="visitors"?"block":"none";
+  document.getElementById("engagement-panel").style.display = tab==="engagement"?"block":"none";
+  document.getElementById("leads-panel").style.display = tab==="leads"?"block":"none";
+  ["visitors","engagement","leads"].forEach(t=>{
+    const el = document.getElementById("atab-"+t);
+    if(el) el.style.cssText = "padding:10px 20px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;margin-bottom:-2px;border-bottom:2px solid "+(tab===t?"#000;color:#000":"transparent;color:var(--gtext)");
+  });
+  if(tab==="leads") loadLeads();
+}
+
+async function loadLeads(){
+  const filter = document.getElementById("analytics-demo-filter").value;
+  const url = filter ? API+"/api/gate-leads/"+filter : API+"/api/gate-leads";
+  const res = await fetch(url);
+  const rows = await res.json();
+  const el = document.getElementById("leads-table");
+
+  if(!rows.length){
+    el.innerHTML="<p style='color:var(--gtext);font-size:13px'>No leads yet. People who fill in the gate form will appear here.</p>";
+    return;
+  }
+
+  let tbl = "<div style='overflow-x:auto'><table style='width:100%;border-collapse:collapse;font-size:13px'>";
+  tbl += "<thead><tr style='border-bottom:2px solid var(--gborder)'>";
+  ["Name","Email","Company","ISP / Network","Demo","Date"].forEach(function(h){
+    tbl += "<th style='text-align:left;padding:10px 12px;color:var(--gtext);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px'>"+h+"</th>";
+  });
+  tbl += "</tr></thead><tbody>";
+
+  rows.forEach(function(r, i){
+    var bg = i%2===0?"#fff":"#fafafa";
+    var date = r.submitted_at ? new Date(r.submitted_at).toLocaleString() : "—";
+    tbl += "<tr style='border-bottom:1px solid var(--gborder);background:"+bg+"'>";
+    tbl += "<td style='padding:11px 12px;font-weight:600;color:#000'>"+(r.name||"—")+"</td>";
+    tbl += "<td style='padding:11px 12px'><a href='mailto:"+(r.email||"")+"' style='color:#2563EB;text-decoration:none'>"+(r.email||"—")+"</a></td>";
+    tbl += "<td style='padding:11px 12px;color:var(--gtext)'>"+(r.company||"—")+"</td>";
+    tbl += "<td style='padding:11px 12px;color:var(--gtext);font-size:12px'>"+(r.as_name||"—")+"</td>";
+    tbl += "<td style='padding:11px 12px'><span style='background:#f0f0f0;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600'>"+(r.demo_slug||"—")+"</span></td>";
+    tbl += "<td style='padding:11px 12px;color:var(--gtext);font-size:12px'>"+date+"</td>";
+    tbl += "</tr>";
+  });
+  tbl += "</tbody></table></div>";
+  el.innerHTML = tbl;
+}
+
+async function loadEngagement(){
+  const filter = document.getElementById("analytics-demo-filter").value;
+  const url = filter ? API+"/api/engagement/"+filter : API+"/api/engagement";
+  const res = await fetch(url);
+  const rows = await res.json();
+
+  // Stats cards
+  const total = rows.length;
+  const completed = rows.filter(r=>r.completed==1||r.completed==true).length;
+  const booked = rows.filter(r=>r.booked==1||r.booked==true).length;
+  const avgSteps = total ? Math.round(rows.reduce((a,r)=>a+(parseInt(r.steps_viewed)||0),0)/total) : 0;
+  const compRate = total ? Math.round((completed/total)*100) : 0;
+
+  document.getElementById("engagement-stats").innerHTML = [
+    {label:"Total Sessions", val:total, color:"#1A2B4A"},
+    {label:"Avg Steps Viewed", val:avgSteps+" steps", color:"#2563EB"},
+    {label:"Completed Demo", val:completed+" ("+compRate+"%)", color:"#00B5AD"},
+    {label:"Clicked Book Demo", val:booked, color:"#FF6B35"},
+  ].map(s=>`
+    <div style="background:#f8fafc;border:1px solid var(--gborder);border-radius:10px;padding:16px;border-top:3px solid ${s.color}">
+      <div style="font-size:22px;font-weight:800;color:${s.color}">${s.val}</div>
+      <div style="font-size:12px;color:var(--gtext);margin-top:4px">${s.label}</div>
+    </div>
+  `).join("");
+
+  if(!rows.length){
+    document.getElementById("engagement-table").innerHTML="<p style='color:var(--gtext);font-size:13px'>No engagement data yet. Share your demo link to start tracking.</p>";
+    return;
+  }
+
+  let tbl = "<div style='overflow-x:auto'><table style='width:100%;border-collapse:collapse;font-size:13px'>";
+  tbl += "<thead><tr style='border-bottom:2px solid var(--gborder)'>";
+  ["Company","Demo","Steps Reached","Progress","Completed","Booked","Time Spent","Last Seen"].forEach(h=>{
+    tbl += "<th style='text-align:left;padding:10px 12px;color:var(--gtext);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px'>"+h+"</th>";
+  });
+  tbl += "</tr></thead><tbody>";
+
+  rows.forEach(function(r, i){
+    var company = r.company || "Unknown";
+    var demo = r.demo_slug || "—";
+    var steps = parseInt(r.steps_viewed)||0;
+    var total = parseInt(r.total_steps)||0;
+    var maxStep = parseInt(r.max_step)||0;
+    var pct = total ? Math.round((maxStep/total)*100) : 0;
+    var completed = r.completed==1||r.completed==true;
+    var booked = r.booked==1||r.booked==true;
+    var timeSec = parseInt(r.total_time_sec)||0;
+    var timeStr = timeSec > 60 ? Math.round(timeSec/60)+"m "+( timeSec%60)+"s" : timeSec+"s";
+    var lastSeen = r.last_event_at ? new Date(r.last_event_at).toLocaleString() : "—";
+    var bg = i%2===0?"#fff":"#fafafa";
+
+    var progressBar = "<div style='width:100px;background:#e5e7eb;border-radius:20px;height:6px;overflow:hidden'><div style='width:"+pct+"%;background:"+(pct>=100?"#00B5AD":pct>50?"#2563EB":"#FF6B35")+";height:100%;border-radius:20px'></div></div><div style='font-size:10px;color:var(--gtext);margin-top:2px'>"+maxStep+" of "+total+"</div>";
+
+    tbl += "<tr style='border-bottom:1px solid var(--gborder);background:"+bg+"'>";
+    tbl += "<td style='padding:11px 12px;font-weight:600;color:#000'>"+company+"</td>";
+    tbl += "<td style='padding:11px 12px'><span style='background:#f0f0f0;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600'>"+demo+"</span></td>";
+    tbl += "<td style='padding:11px 12px;color:var(--gtext)'>"+steps+"</td>";
+    tbl += "<td style='padding:11px 12px'>"+progressBar+"</td>";
+    tbl += "<td style='padding:11px 12px;text-align:center'>"+(completed?"<span style='color:#00B5AD;font-size:18px'>✓</span>":"<span style='color:#ccc;font-size:18px'>✗</span>")+"</td>";
+    tbl += "<td style='padding:11px 12px;text-align:center'>"+(booked?"<span style='color:#FF6B35;font-weight:700;font-size:13px'>✓ Booked</span>":"—")+"</td>";
+    tbl += "<td style='padding:11px 12px;color:var(--gtext)'>"+timeStr+"</td>";
+    tbl += "<td style='padding:11px 12px;color:var(--gtext);font-size:12px'>"+lastSeen+"</td>";
+    tbl += "</tr>";
+  });
+
+  tbl += "</tbody></table></div>";
+  document.getElementById("engagement-table").innerHTML = tbl;
+}
+
+
+let gateSlug = "";
+let gateName = "";
+let gateEmail = "";
+let gateCompany = "";
+
+function showGate(slug, product){
+  gateSlug = slug;
+  const p = PRODUCTS[product] || PRODUCTS.humanity;
+
+  // Set gate logo same style as player
+  const logoEl = document.getElementById("gate-logo-area");
+  if(p.name === "WhenToWork"){
+    logoEl.innerHTML = '<div style="display:inline-block;border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 14px"><span style="font-size:20px;font-weight:700;color:#fff">WhenToWork</span><br><span style="font-size:11px;color:rgba(255,255,255,0.4)">Employee Scheduling</span></div>';
+  } else {
+    logoEl.innerHTML = '<div style="display:inline-block;border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 14px"><span style="font-size:20px;font-weight:700;color:#fff">'+p.name+'</span><span style="font-size:13px;font-weight:300;color:rgba(255,255,255,0.45);margin-left:4px">'+p.sub+'</span>'+(p.bytcp?'<br><span style="font-size:11px;color:#2563EB">by tcp™</span>':'')+'</div>';
+  }
+
+  document.getElementById("demo-gate").classList.add("show");
+}
+
+async function submitGate(){
+  const name = document.getElementById("gate-name").value.trim();
+  const email = document.getElementById("gate-email").value.trim();
+  const company = document.getElementById("gate-company").value.trim();
+
+  if(!name && !email){
+    document.getElementById("gate-name").style.borderColor="#FF6B35";
+    document.getElementById("gate-email").style.borderColor="#FF6B35";
+    return;
+  }
+
+  gateName = name;
+  gateEmail = email;
+  gateCompany = company;
+
+  // Save lead
+  fetch(API+"/api/gate-lead", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({
+      demo_slug: gateSlug,
+      name: name,
+      email: email,
+      company: company,
+      ip: sessionIp,
+      as_name: sessionCompany,
+      as_domain: sessionDomain
+    })
+  }).catch(()=>{});
+
+  closeGate();
+}
+
+function skipGate(){
+  closeGate();
+}
+
+function closeGate(){
+  document.getElementById("demo-gate").classList.remove("show");
 }
 
 route();
