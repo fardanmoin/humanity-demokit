@@ -43,7 +43,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 #player-img{display:block;width:100%;height:auto;user-select:none;pointer-events:none}
 
 /* Hotspot */
-.hotspot{position:absolute;transform:translate(-50%,-50%);z-index:9998}
+.hotspot{position:fixed;z-index:9998;pointer-events:none}.hotspot .hotspot-ring{pointer-events:auto}
 .hotspot-ring{
   width:36px;height:36px;border-radius:50%;
   background:rgba(0,181,173,0.15);border:2px solid var(--teal);
@@ -678,20 +678,21 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
           </div>
           <div class="monitor-scroll" id="monitor-scroll">
             <div class="monitor-content">
-            <img id="player-img" src="" alt=""/>
-            <div class="hotspot" id="hotspot">
-              <div class="hotspot-ring"><div class="hotspot-dot"></div></div>
-              <div class="tooltip-box pos-right" id="tooltip-box">
-                <div class="tooltip-step" id="tooltip-step">Step 1</div>
-                <div class="tooltip-title" id="tooltip-title"></div>
-                <div class="tooltip-body" id="tooltip-body"></div>
-                <div class="tooltip-actions">
-                  <button class="btn-prev" id="btn-prev" onclick="prevStep()">← Back</button>
-                  <button class="btn-next" id="btn-next" onclick="nextStep()">Next →</button>
-                </div>
-              </div>
+              <img id="player-img" src="" alt=""/>
             </div>
           </div>
+          <!-- Hotspot outside scroll so tooltip never clips -->
+          <div class="hotspot" id="hotspot" style="display:none">
+            <div class="hotspot-ring"><div class="hotspot-dot"></div></div>
+            <div class="tooltip-box pos-right" id="tooltip-box">
+              <div class="tooltip-step" id="tooltip-step">Step 1</div>
+              <div class="tooltip-title" id="tooltip-title"></div>
+              <div class="tooltip-body" id="tooltip-body"></div>
+              <div class="tooltip-actions">
+                <button class="btn-prev" id="btn-prev" onclick="prevStep()" style="pointer-events:auto">← Back</button>
+                <button class="btn-next" id="btn-next" onclick="nextStep()" style="pointer-events:auto">Next →</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1200,8 +1201,34 @@ function renderStep(){
     if(slideChanged) imgEl.src = s.image_data;
 
     const hotEl=document.getElementById("hotspot");
-    hotEl.style.left=h.x+"%";
-    hotEl.style.top=h.y+"%";
+    hotEl.style.display="block";
+    // Position hotspot using fixed viewport coords based on image position
+    const positionHotspot = () => {
+      const img = document.getElementById("player-img");
+      const scroller = document.getElementById("monitor-scroll");
+      if(!img || !scroller) return;
+      const imgRect = img.getBoundingClientRect();
+      const scrollTop = scroller.scrollTop;
+      const imgHeight = img.offsetHeight;
+      const imgWidth = img.offsetWidth;
+      const hotX = imgRect.left + (h.x/100) * imgWidth;
+      const hotY = imgRect.top + (h.y/100) * imgHeight - scroller.scrollTop + scroller.scrollTop;
+      // Recalculate using actual rendered position
+      const monitorRect = scroller.getBoundingClientRect();
+      const relY = (h.y/100) * imgHeight;
+      const fixedY = monitorRect.top + relY - scroller.scrollTop;
+      const fixedX = imgRect.left + (h.x/100) * imgWidth;
+      hotEl.style.left = fixedX + "px";
+      hotEl.style.top = fixedY + "px";
+    };
+    positionHotspot();
+    // Reposition on scroll
+    const scroller = document.getElementById("monitor-scroll");
+    if(scroller) {
+      scroller._hotspotHandler && scroller.removeEventListener("scroll", scroller._hotspotHandler);
+      scroller._hotspotHandler = positionHotspot;
+      scroller.addEventListener("scroll", positionHotspot);
+    }
 
     const tb=document.getElementById("tooltip-box");
     // Auto-flip: if hotspot is in bottom 35% of image, force tooltip above
