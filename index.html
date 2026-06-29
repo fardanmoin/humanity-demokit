@@ -346,7 +346,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
   display:flex;
   align-items:flex-start;
   justify-content:center;
-  padding:32px 48px;
+  padding:24px 40px;
 }
 .monitor-outer{
   width:100%;
@@ -359,6 +359,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
     0 0 0 1px rgba(0,181,173,0.1),
     0 0 50px rgba(0,181,173,0.12),
     0 30px 80px rgba(0,0,0,0.8);
+  flex-shrink:0;
 }
 .monitor-camera{
   display:flex;justify-content:center;
@@ -412,8 +413,8 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 }
 /* Scrollable inner screen */
 .monitor-scroll{
-  max-height:calc(100vh - 200px);
-  overflow-y:auto;
+  height:calc(100vh - 185px);
+  overflow-y:scroll;
   overflow-x:hidden;
   position:relative;
   scrollbar-width:thin;
@@ -1208,8 +1209,25 @@ function renderStep(){
       const imgRect = img.getBoundingClientRect();
       const fixedX = imgRect.left + (h.x/100) * imgRect.width;
       const fixedY = imgRect.top  + (h.y/100) * imgRect.height;
-      hotEl.style.left = fixedX + "px";
-      hotEl.style.top  = fixedY + "px";
+      // Clamp hotspot inside viewport
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      hotEl.style.left = Math.min(Math.max(fixedX, 20), vw-20) + "px";
+      hotEl.style.top  = Math.min(Math.max(fixedY, 80), vh-20) + "px";
+
+      // Smart tooltip flip based on actual fixed position
+      const tbEl = document.getElementById("tooltip-box");
+      if(!tbEl) return;
+      const tw = 300; const th = 220;
+      const hx = parseFloat(hotEl.style.left);
+      const hy = parseFloat(hotEl.style.top);
+      let pos = h.position || "right";
+      if(pos==="right"  && hx + tw + 60 > vw) pos = "left";
+      if(pos==="left"   && hx - tw - 60 < 0)  pos = "right";
+      if(pos==="bottom" && hy + th + 60 > vh)  pos = "top";
+      if(hy + th + 60 > vh) pos = "top";
+      if(hy - th - 60 < 80 && pos==="top") pos = "bottom";
+      tbEl.className = "tooltip-box pos-"+pos;
     };
     positionHotspot();
     const scroller2 = document.getElementById("monitor-scroll");
@@ -1220,28 +1238,8 @@ function renderStep(){
     }
 
     const tb=document.getElementById("tooltip-box");
-    let tpos = h.position;
-    // Flip based on viewport position after render
-    requestAnimationFrame(()=>{
-      const hotEl2 = document.getElementById("hotspot");
-      const tbEl = document.getElementById("tooltip-box");
-      if(!hotEl2 || !tbEl) return;
-      const hx = parseFloat(hotEl2.style.left)||0;
-      const hy = parseFloat(hotEl2.style.top)||0;
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const tw = 290; const th = 200;
-      let pos = h.position;
-      if(pos==="right"  && hx + tw + 60 > vw) pos = "left";
-      if(pos==="left"   && hx - tw - 60 < 0)  pos = "right";
-      if(pos==="bottom" && hy + th + 60 > vh)  pos = "top";
-      if(pos==="top"    && hy - th - 60 < 52)  pos = "bottom";
-      // Default fallbacks based on position
-      if(hy + th + 60 > vh && pos !== "top") pos = "top";
-      if(hx + tw + 60 > vw && pos === "right") pos = "left";
-      tbEl.className = "tooltip-box pos-"+pos;
-    });
-    tb.className="tooltip-box pos-"+tpos;
+    // tooltip class set dynamically by positionHotspot
+    tb.className="tooltip-box pos-"+(h.position||"right");
     document.getElementById("tooltip-step").textContent="Step "+globalStep+" of "+totalSteps;
     document.getElementById("tooltip-title").textContent=h.title;
     document.getElementById("tooltip-body").textContent=h.body;
