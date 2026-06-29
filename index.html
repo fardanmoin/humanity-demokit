@@ -43,7 +43,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 #player-img{display:block;width:100%;height:auto;user-select:none;pointer-events:none}
 
 /* Hotspot */
-.hotspot{position:absolute;transform:translate(-50%,-50%);z-index:50}
+.hotspot{position:absolute;transform:translate(-50%,-50%);z-index:9998}
 .hotspot-ring{
   width:36px;height:36px;border-radius:50%;
   background:rgba(0,181,173,0.15);border:2px solid var(--teal);
@@ -60,10 +60,11 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 
 /* Tooltip */
 .tooltip-box{
-  position:absolute;z-index:100;width:290px;
+  position:absolute;z-index:9999;width:290px;
   background:#111;border-radius:12px;
   box-shadow:0 8px 40px rgba(0,0,0,0.6);padding:18px;
   border:1px solid #222;border-top:2px solid var(--teal);
+  pointer-events:auto;
 }
 .tooltip-box.pos-right{left:48px;top:50%;transform:translateY(-50%)}
 .tooltip-box.pos-left{right:48px;top:50%;transform:translateY(-50%)}
@@ -371,7 +372,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 }
 .monitor-screen{
   border-radius:8px;
-  overflow:hidden;
+  overflow:visible;
   border:1px solid rgba(0,181,173,0.15);
   position:relative;
 }
@@ -412,18 +413,19 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 }
 /* Scrollable inner screen */
 .monitor-scroll{
-  max-height:calc(100vh - 180px);
+  height:calc(100vh - 200px);
   overflow-y:auto;
   overflow-x:hidden;
   position:relative;
   scrollbar-width:thin;
   scrollbar-color:rgba(0,181,173,0.3) transparent;
 }
-.monitor-scroll::-webkit-scrollbar{width:6px}
+.monitor-scroll::-webkit-scrollbar{width:5px}
 .monitor-scroll::-webkit-scrollbar-track{background:transparent}
 .monitor-scroll::-webkit-scrollbar-thumb{background:rgba(0,181,173,0.3);border-radius:3px}
 .monitor-content{
   position:relative;
+  overflow:visible;
 }
 .monitor-content img{
   display:block;
