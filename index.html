@@ -1138,6 +1138,32 @@ function errPage(msg){
   return`<div style="color:white;display:flex;align-items:center;justify-content:center;height:100vh;font-size:20px;background:#000;font-family:sans-serif">${msg}</div>`;
 }
 
+
+function fitImageToFrame(img){
+  const scroller = document.getElementById("monitor-scroll");
+  if(!scroller || !img) return;
+  // Reset to natural width first
+  img.style.width = "100%";
+  img.style.height = "auto";
+  // Wait a frame for layout
+  requestAnimationFrame(()=>{
+    const containerH = scroller.clientHeight;
+    const imgH = img.offsetHeight;
+    if(imgH < containerH){
+      // Image is shorter than frame — scale it up to fill height
+      const scale = containerH / imgH;
+      img.style.width = (100 * scale) + "%";
+      img.style.height = "auto";
+    } else {
+      // Image taller — keep full width, it will scroll
+      img.style.width = "100%";
+      img.style.height = "auto";
+    }
+  });
+}
+
+let positionHotspotGlobal = null;
+
 let prevSlideIndex = -1;
 let sessionId = null;
 let stepStartTime = null;
@@ -1200,7 +1226,14 @@ function renderStep(){
   } else {
     // Only update image src when slide changes (avoids flicker on same slide)
     const imgEl = document.getElementById("player-img");
-    if(slideChanged) imgEl.src = s.image_data;
+    if(slideChanged){
+      imgEl.src = s.image_data;
+      imgEl.style.width = "100%";
+      imgEl.onload = function(){
+        fitImageToFrame(imgEl);
+        positionHotspotGlobal && positionHotspotGlobal();
+      };
+    }
 
     const hotEl=document.getElementById("hotspot");
     hotEl.style.display="block";
@@ -1231,6 +1264,7 @@ function renderStep(){
       if(hy - th - 60 < 80 && pos==="top") pos = "bottom";
       tbEl.className = "tooltip-box pos-"+pos;
     };
+    positionHotspotGlobal = positionHotspot;
     positionHotspot();
     const scroller2 = document.getElementById("monitor-scroll");
     if(scroller2){
