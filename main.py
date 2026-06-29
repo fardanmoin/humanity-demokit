@@ -1,9 +1,9 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional, List
-import os, base64, json, io
+import os, base64, json, io, httpx
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
@@ -38,6 +38,18 @@ def init_db():
             position INTEGER NOT NULL,
             image_data TEXT NOT NULL,
             slide_type TEXT NOT NULL DEFAULT 'desktop'
+        );
+        CREATE TABLE IF NOT EXISTS analytics (
+            id SERIAL PRIMARY KEY,
+            demo_slug TEXT NOT NULL,
+            ip TEXT,
+            as_name TEXT,
+            as_domain TEXT,
+            country TEXT,
+            continent TEXT,
+            user_agent TEXT,
+            referer TEXT,
+            visited_at TIMESTAMP DEFAULT NOW()
         );
     """)
     conn.commit()
@@ -104,6 +116,77 @@ class Hotspot(BaseModel):
     title: str
     body: str
     position: str = "right"
+
+
+IPINFO_TOKEN = os.environ.get("IPINFO_TOKEN", "")
+
+async def lookup_ip(ip: str) -> dict:
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            r = await client.get(f"https://api.ipinfo.io/lite/{ip}?token={IPINFO_TOKEN}")
+            if r.status_code == 200:
+                return r.json()
+    except:
+        pass
+    return {}
+
+@app.post("/api/analytics/track")
+async def track_visit(request: Request, slug: str, user_agent: str = "", referer: str = ""):
+    ip = request.headers.get("x-forwarded-for", request.client.host or "").split(",")[0].strip()
+    info = await lookup_ip(ip)
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        """INSERT INTO analytics (demo_slug, ip, as_name, as_domain, country, continent, user_agent, referer)
+           VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
+        (slug, ip,
+         info.get("as_name",""), info.get("as_domain",""),
+         info.get("country",""), info.get("continent",""),
+         user_agent[:300], referer[:300])
+    )
+    conn.commit()
+    cur.close(); conn.close()
+    return {"ok": True}
+
+@app.get("/api/analytics/{slug}")
+def get_analytics(slug: str):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        """SELECT ip, as_name, as_domain, country, user_agent, referer,
+                  COUNT(*) as visits,
+                  MAX(visited_at) as last_seen,
+                  MIN(visited_at) as first_seen
+           FROM analytics WHERE demo_slug=%s
+           GROUP BY ip, as_name, as_domain, country, user_agent, referer
+           ORDER BY last_seen DESC LIMIT 200""",
+        (slug,)
+    )
+    rows = [dict(r) for r in cur.fetchall()]
+    # Convert datetimes to strings
+    for r in rows:
+        if r.get("last_seen"): r["last_seen"] = str(r["last_seen"])
+        if r.get("first_seen"): r["first_seen"] = str(r["first_seen"])
+    cur.close(); conn.close()
+    return rows
+
+@app.get("/api/analytics")
+def get_all_analytics():
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        """SELECT demo_slug, ip, as_name, as_domain, country, user_agent, referer,
+                  COUNT(*) as visits,
+                  MAX(visited_at) as last_seen
+           FROM analytics
+           GROUP BY demo_slug, ip, as_name, as_domain, country, user_agent, referer
+           ORDER BY last_seen DESC LIMIT 500"""
+    )
+    rows = [dict(r) for r in cur.fetchall()]
+    for r in rows:
+        if r.get("last_seen"): r["last_seen"] = str(r["last_seen"])
+    cur.close(); conn.close()
+    return rows
 
 @app.get("/api/health")
 def health():
