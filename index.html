@@ -341,13 +341,14 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 /* ── DESKTOP MONITOR FRAME ── */
 .monitor-wrap{
   margin-top:52px;
-  padding:32px 40px 28px;
+  padding:32px 40px 48px;
   background:#050a14;
   min-height:calc(100vh - 52px);
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:flex-start;
+  overflow-y:auto;
 }
 .monitor-outer{
   width:100%;
@@ -373,7 +374,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 }
 .monitor-screen{
   border-radius:8px;
-  overflow:hidden;
+  overflow:visible;
   border:1px solid rgba(0,181,173,0.15);
   position:relative;
 }
@@ -414,6 +415,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 .monitor-content{
   position:relative;
   background:#000;
+  overflow:visible;
 }
 .monitor-content img{
   display:block;
@@ -1190,7 +1192,13 @@ function renderStep(){
     hotEl.style.top=h.y+"%";
 
     const tb=document.getElementById("tooltip-box");
-    tb.className="tooltip-box pos-"+h.position;
+    // Auto-flip: if hotspot is in bottom 35% of image, force tooltip above
+    let tpos = h.position;
+    if(h.y > 65 && tpos === "bottom") tpos = "top";
+    if(h.y > 75) tpos = "top";
+    // If hotspot is in right 60%, force tooltip left
+    if(h.x > 60 && tpos === "right") tpos = "left";
+    tb.className="tooltip-box pos-"+tpos;
     document.getElementById("tooltip-step").textContent="Step "+globalStep+" of "+totalSteps;
     document.getElementById("tooltip-title").textContent=h.title;
     document.getElementById("tooltip-body").textContent=h.body;
@@ -1203,10 +1211,16 @@ function renderStep(){
     const doScroll = () => {
       const img = document.getElementById("player-img");
       const imgHeight = img.offsetHeight;
-      const hotspotTop = (h.y / 100) * imgHeight + 52; // +52 for fixed header
+      const hotspotTop = (h.y / 100) * imgHeight;
+      const monitorWrap = document.querySelector(".monitor-wrap");
       const viewportH = window.innerHeight;
-      const scrollTarget = hotspotTop - (viewportH / 2);
-      window.scrollTo({ top: Math.max(0, scrollTarget), behavior: "smooth" });
+      // Account for monitor topbar (~52px header + 36px topbar + 32px padding)
+      const offset = 120;
+      const scrollTarget = hotspotTop - (viewportH / 2) + offset;
+      if(monitorWrap){
+        monitorWrap.scrollTo({ top: Math.max(0, scrollTarget), behavior: "smooth" });
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     if(slideChanged){
