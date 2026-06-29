@@ -3,7 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional, List
-import os, base64, json, io, httpx
+import os, base64, json, io
+import httpx, httpx
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
@@ -51,6 +52,32 @@ def init_db():
             referer TEXT,
             visited_at TIMESTAMP DEFAULT NOW()
         );
+        CREATE TABLE IF NOT EXISTS gate_leads (
+            id SERIAL PRIMARY KEY,
+            demo_slug TEXT NOT NULL,
+            name TEXT,
+            email TEXT,
+            company TEXT,
+            ip TEXT,
+            as_name TEXT,
+            as_domain TEXT,
+            submitted_at TIMESTAMP DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS engagement (
+            id SERIAL PRIMARY KEY,
+            session_id TEXT NOT NULL,
+            demo_slug TEXT NOT NULL,
+            ip TEXT,
+            as_name TEXT,
+            as_domain TEXT,
+            event TEXT NOT NULL,
+            step_index INTEGER,
+            step_title TEXT,
+            total_steps INTEGER,
+            slide_index INTEGER,
+            time_on_step INTEGER,
+            created_at TIMESTAMP DEFAULT NOW()
+        );
     """)
     conn.commit()
     migrations = [
@@ -59,6 +86,8 @@ def init_db():
         "ALTER TABLE demos ADD COLUMN IF NOT EXISTS app_screenshots JSONB NOT NULL DEFAULT '[]'",
         "ALTER TABLE slides ADD COLUMN IF NOT EXISTS hotspots JSONB NOT NULL DEFAULT '[]'",
         "ALTER TABLE slides ADD COLUMN IF NOT EXISTS slide_type TEXT NOT NULL DEFAULT 'desktop'",
+        "CREATE TABLE IF NOT EXISTS gate_leads (id SERIAL PRIMARY KEY, demo_slug TEXT NOT NULL, name TEXT, email TEXT, company TEXT, ip TEXT, as_name TEXT, as_domain TEXT, submitted_at TIMESTAMP DEFAULT NOW())",
+        "CREATE TABLE IF NOT EXISTS engagement (id SERIAL PRIMARY KEY, session_id TEXT NOT NULL, demo_slug TEXT NOT NULL, ip TEXT, as_name TEXT, as_domain TEXT, event TEXT NOT NULL, step_index INTEGER, step_title TEXT, total_steps INTEGER, slide_index INTEGER, time_on_step INTEGER, created_at TIMESTAMP DEFAULT NOW())",
         "ALTER TABLE demos ADD COLUMN IF NOT EXISTS rep_name TEXT NOT NULL DEFAULT 'Aaron Jose'",
         "ALTER TABLE demos ADD COLUMN IF NOT EXISTS rep_title TEXT NOT NULL DEFAULT 'Senior Account Executive'",
     ]
@@ -146,7 +175,7 @@ async def track_visit(request: Request, slug: str, user_agent: str = "", referer
     )
     conn.commit()
     cur.close(); conn.close()
-    return {"ok": True}
+    return {"ok": True, "ip": ip, "as_name": info.get("as_name",""), "as_domain": info.get("as_domain","")}
 
 @app.get("/api/analytics/{slug}")
 def get_analytics(slug: str):
@@ -185,6 +214,141 @@ def get_all_analytics():
     rows = [dict(r) for r in cur.fetchall()]
     for r in rows:
         if r.get("last_seen"): r["last_seen"] = str(r["last_seen"])
+    cur.close(); conn.close()
+    return rows
+
+
+class EngagementEvent(BaseModel):
+    session_id: str
+    demo_slug: str
+    ip: Optional[str] = ""
+    as_name: Optional[str] = ""
+    as_domain: Optional[str] = ""
+    event: str
+    step_index: Optional[int] = None
+    step_title: Optional[str] = ""
+    total_steps: Optional[int] = None
+    slide_index: Optional[int] = None
+    time_on_step: Optional[int] = None
+
+@app.post("/api/engagement")
+def track_engagement(e: EngagementEvent):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        """INSERT INTO engagement
+           (session_id, demo_slug, ip, as_name, as_domain, event, step_index, step_title, total_steps, slide_index, time_on_step)
+           VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+        (e.session_id, e.demo_slug, e.ip, e.as_name, e.as_domain,
+         e.event, e.step_index, e.step_title, e.total_steps, e.slide_index, e.time_on_step)
+    )
+    conn.commit()
+    cur.close(); conn.close()
+    return {"ok": True}
+
+@app.get("/api/engagement/{slug}")
+def get_engagement(slug: str):
+    conn = get_conn()
+    cur = conn.cursor()
+    # Get per-session summary
+    cur.execute("""
+        SELECT
+            session_id,
+            MAX(as_name) as company,
+            MAX(as_domain) as domain,
+            MAX(ip) as ip,
+            COUNT(CASE WHEN event='step_view' THEN 1 END) as steps_viewed,
+            MAX(total_steps) as total_steps,
+            MAX(CASE WHEN event='step_view' THEN step_index END) as max_step,
+            MAX(CASE WHEN event='demo_complete' THEN 1 ELSE 0 END) as completed,
+            MAX(CASE WHEN event='book_clicked' THEN 1 ELSE 0 END) as booked,
+            SUM(CASE WHEN event='step_view' THEN time_on_step ELSE 0 END) as total_time_sec,
+            MIN(created_at) as started_at,
+            MAX(created_at) as last_event_at
+        FROM engagement
+        WHERE demo_slug=%s
+        GROUP BY session_id
+        ORDER BY last_event_at DESC
+        LIMIT 500
+    """, (slug,))
+    rows = [dict(r) for r in cur.fetchall()]
+    for r in rows:
+        if r.get("started_at"): r["started_at"] = str(r["started_at"])
+        if r.get("last_event_at"): r["last_event_at"] = str(r["last_event_at"])
+    cur.close(); conn.close()
+    return rows
+
+@app.get("/api/engagement")
+def get_all_engagement():
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT
+            demo_slug,
+            session_id,
+            MAX(as_name) as company,
+            MAX(as_domain) as domain,
+            COUNT(CASE WHEN event='step_view' THEN 1 END) as steps_viewed,
+            MAX(total_steps) as total_steps,
+            MAX(CASE WHEN event='step_view' THEN step_index END) as max_step,
+            MAX(CASE WHEN event='demo_complete' THEN 1 ELSE 0 END) as completed,
+            MAX(CASE WHEN event='book_clicked' THEN 1 ELSE 0 END) as booked,
+            SUM(CASE WHEN event='step_view' THEN time_on_step ELSE 0 END) as total_time_sec,
+            MIN(created_at) as started_at,
+            MAX(created_at) as last_event_at
+        FROM engagement
+        GROUP BY demo_slug, session_id
+        ORDER BY last_event_at DESC
+        LIMIT 500
+    """)
+    rows = [dict(r) for r in cur.fetchall()]
+    for r in rows:
+        if r.get("started_at"): r["started_at"] = str(r["started_at"])
+        if r.get("last_event_at"): r["last_event_at"] = str(r["last_event_at"])
+    cur.close(); conn.close()
+    return rows
+
+
+class GateLead(BaseModel):
+    demo_slug: str
+    name: Optional[str] = ""
+    email: Optional[str] = ""
+    company: Optional[str] = ""
+    ip: Optional[str] = ""
+    as_name: Optional[str] = ""
+    as_domain: Optional[str] = ""
+
+@app.post("/api/gate-lead")
+def save_gate_lead(lead: GateLead):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO gate_leads (demo_slug, name, email, company, ip, as_name, as_domain) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+        (lead.demo_slug, lead.name, lead.email, lead.company, lead.ip, lead.as_name, lead.as_domain)
+    )
+    conn.commit()
+    cur.close(); conn.close()
+    return {"ok": True}
+
+@app.get("/api/gate-leads")
+def get_gate_leads():
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM gate_leads ORDER BY submitted_at DESC LIMIT 500")
+    rows = [dict(r) for r in cur.fetchall()]
+    for r in rows:
+        if r.get("submitted_at"): r["submitted_at"] = str(r["submitted_at"])
+    cur.close(); conn.close()
+    return rows
+
+@app.get("/api/gate-leads/{slug}")
+def get_gate_leads_by_slug(slug: str):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM gate_leads WHERE demo_slug=%s ORDER BY submitted_at DESC", (slug,))
+    rows = [dict(r) for r in cur.fetchall()]
+    for r in rows:
+        if r.get("submitted_at"): r["submitted_at"] = str(r["submitted_at"])
     cur.close(); conn.close()
     return rows
 
