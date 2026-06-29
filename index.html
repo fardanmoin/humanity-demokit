@@ -314,6 +314,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
       <button class="tab active" onclick="switchTab('tab-demos',this)">My Demos</button>
       <button class="tab" onclick="switchTab('tab-create',this)">Create Demo</button>
       <button class="tab" onclick="switchTab('tab-slides',this)">Add Slides</button>
+      <button class="tab" onclick="switchTab('tab-analytics',this)">📊 Analytics</button>
     </div>
 
     <!-- MY DEMOS -->
@@ -373,6 +374,21 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
         </div>
         <button class="btn-primary" onclick="createDemo()" id="btn-create-demo">Create Demo</button>
         <div id="create-msg"></div>
+      </div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div class="tab-content" id="tab-analytics">
+      <div class="admin-card">
+        <h2>Visitor Analytics</h2>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+          <select id="analytics-demo-filter" style="padding:8px 12px;border:1.5px solid var(--gborder);border-radius:8px;font-size:13px;outline:none;min-width:220px" onchange="loadAnalytics()">
+            <option value="">All Demos</option>
+          </select>
+          <button class="btn-primary" onclick="loadAnalytics()" style="padding:9px 18px;font-size:13px">Refresh</button>
+          <span id="analytics-count" style="font-size:12px;color:var(--gtext)"></span>
+        </div>
+        <div id="analytics-table"><p style="color:var(--gtext);font-size:13px">Select a demo or load all visitors.</p></div>
       </div>
     </div>
 
@@ -572,6 +588,7 @@ function switchTab(id,btn){
   document.getElementById(id).classList.add("active");btn.classList.add("active");
   if(id==="tab-demos") loadDemosList();
   if(id==="tab-slides") populateDemoSelect();
+  if(id==="tab-analytics"){populateAnalyticsFilter();loadAnalytics();}
 }
 
 // ── PRODUCT SELECT ──
@@ -881,6 +898,8 @@ async function loadDemo(slug){
     showView("player-view");
     renderPlayerLogo(demoData.product);
     renderStep();
+    // Track visitor
+    fetch(API+"/api/analytics/track?slug="+slug+"&user_agent="+encodeURIComponent(navigator.userAgent)+"&referer="+encodeURIComponent(document.referrer),{method:"POST"}).catch(()=>{});
   }catch(e){document.body.innerHTML=errPage("Failed to load demo.")}
 }
 
@@ -1027,6 +1046,70 @@ function showMsg(id,text,type){
   const el=document.getElementById(id);
   el.innerHTML=`<div class="msg ${type}">${text}</div>`;
   setTimeout(()=>el.innerHTML="",5000);
+}
+
+
+async function loadAnalytics(){
+  const filter = document.getElementById("analytics-demo-filter").value;
+  const url = filter ? API+"/api/analytics/"+filter : API+"/api/analytics";
+  const res = await fetch(url);
+  const rows = await res.json();
+  const el = document.getElementById("analytics-table");
+  const countEl = document.getElementById("analytics-count");
+  countEl.textContent = rows.length + " unique visitor" + (rows.length!==1?"s":"");
+
+  if(!rows.length){
+    el.innerHTML='<p style="color:var(--gtext);font-size:13px">No visitors yet. Share your demo link to start tracking.</p>';
+    return;
+  }
+
+  el.innerHTML = `
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr style="border-bottom:2px solid var(--gborder)">
+            <th style="text-align:left;padding:10px 12px;color:var(--gtext);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px">Company / Org</th>
+            <th style="text-align:left;padding:10px 12px;color:var(--gtext);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px">Domain</th>
+            <th style="text-align:left;padding:10px 12px;color:var(--gtext);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px">Country</th>
+            <th style="text-align:left;padding:10px 12px;color:var(--gtext);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px">Demo</th>
+            <th style="text-align:center;padding:10px 12px;color:var(--gtext);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px">Views</th>
+            <th style="text-align:left;padding:10px 12px;color:var(--gtext);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px">Last Seen</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map((r,i)=>{
+            const company = r.as_name || "Unknown";
+            const domain = r.as_domain || "—";
+            const country = r.country || "—";
+            const demo = r.demo_slug || "—";
+            const lastSeen = r.last_seen ? new Date(r.last_seen).toLocaleString() : "—";
+            const isNew = i < 3;
+            return \`<tr style="border-bottom:1px solid var(--gborder);background:\${i%2===0?'#fff':'#fafafa'};transition:background .1s" onmouseover="this.style.background='#f0fffe'" onmouseout="this.style.background='\${i%2===0?'#fff':'#fafafa'}'">
+              <td style="padding:11px 12px;color:#000;font-weight:600;display:flex;align-items:center;gap:8px">
+                \${isNew?'<span style="background:#d1fae5;color:#065f46;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px">NEW</span>':''}
+                \${company}
+              </td>
+              <td style="padding:11px 12px;color:#2563EB">\${domain!=="—"?'<a href="https://'+domain+'" target="_blank" style="color:#2563EB;text-decoration:none">'+domain+'</a>':domain}</td>
+              <td style="padding:11px 12px;color:var(--gtext)">\${country}</td>
+              <td style="padding:11px 12px"><span style="background:#f0f0f0;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600">\${demo}</span></td>
+              <td style="padding:11px 12px;text-align:center"><span style="background:#1A2B4A;color:#fff;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">\${r.visits}</span></td>
+              <td style="padding:11px 12px;color:var(--gtext);font-size:12px">\${lastSeen}</td>
+            </tr>\`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+async function populateAnalyticsFilter(){
+  const res = await fetch(API+"/api/demos");
+  const demos = await res.json();
+  const sel = document.getElementById("analytics-demo-filter");
+  if(!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">All Demos</option>' +
+    demos.map(d=>`<option value="${d.slug}" ${d.slug===current?"selected":""}>${d.title}</option>`).join("");
 }
 
 route();
