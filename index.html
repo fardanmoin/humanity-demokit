@@ -342,12 +342,12 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 /* ── DESKTOP MONITOR FRAME ── */
 .monitor-wrap{
   margin-top:52px;
-  min-height:calc(100vh - 52px);
   background:#050a14;
   display:flex;
   align-items:flex-start;
   justify-content:center;
   padding:32px 48px 48px;
+  min-height:calc(100vh - 52px);
 }
 .monitor-outer{
   width:100%;
@@ -413,7 +413,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 }
 /* Scrollable inner screen */
 .monitor-scroll{
-  height:calc(100vh - 200px);
+  max-height:calc(100vh - 200px);
   overflow-y:auto;
   overflow-x:hidden;
   position:relative;
