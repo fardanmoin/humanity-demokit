@@ -341,81 +341,65 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 /* ── DESKTOP MONITOR FRAME ── */
 .monitor-wrap{
   margin-top:52px;
-  padding:32px 40px 48px;
-  background:#050a14;
-  min-height:calc(100vh - 52px);
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:flex-start;
-  overflow-y:auto;
+  position:relative;
+  width:100%;
 }
 .monitor-outer{
   width:100%;
-  max-width:1200px;
   background:#0a0a0a;
-  border-radius:14px;
-  padding:10px;
-  border:2px solid rgba(0,181,173,0.45);
+  border-left:3px solid rgba(0,181,173,0.5);
+  border-right:3px solid rgba(0,181,173,0.5);
+  border-bottom:3px solid rgba(0,181,173,0.5);
   box-shadow:
-    0 0 0 1px rgba(0,181,173,0.12),
-    0 0 40px rgba(0,181,173,0.1),
-    0 24px 80px rgba(0,0,0,0.7);
+    -4px 0 20px rgba(0,181,173,0.08),
+    4px 0 20px rgba(0,181,173,0.08);
   position:relative;
 }
-.monitor-camera{
-  display:flex;justify-content:center;
-  padding:4px 0 6px;
-}
-.monitor-camera-dot{
-  width:7px;height:7px;border-radius:50%;
-  background:rgba(0,181,173,0.3);
-  border:1.5px solid rgba(0,181,173,0.5);
-}
+.monitor-camera{display:none}
 .monitor-screen{
-  border-radius:8px;
   overflow:visible;
-  border:1px solid rgba(0,181,173,0.15);
   position:relative;
 }
 .monitor-topbar{
-  background:linear-gradient(90deg,#1A2B4A,#0d2240);
-  padding:8px 14px;
-  display:flex;align-items:center;gap:10px;
-  border-bottom:1px solid rgba(0,181,173,0.15);
-  position:relative;
-  z-index:10;
+  background:linear-gradient(90deg,#0d1f3c,#0a1628);
+  padding:9px 20px;
+  display:flex;align-items:center;gap:12px;
+  border-bottom:1px solid rgba(0,181,173,0.2);
+  border-top:3px solid rgba(0,181,173,0.5);
+  position:sticky;
+  top:52px;
+  z-index:100;
+  box-shadow:0 2px 12px rgba(0,0,0,0.4);
 }
-.monitor-dots{display:flex;gap:5px;flex-shrink:0}
-.monitor-dot{width:10px;height:10px;border-radius:50%}
-.monitor-dot.red{background:rgba(0,181,173,0.25);border:1.5px solid rgba(0,181,173,0.4)}
-.monitor-dot.yellow{background:rgba(0,181,173,0.25);border:1.5px solid rgba(0,181,173,0.4)}
-.monitor-dot.green{background:#00B5AD;border:1.5px solid rgba(0,181,173,0.8)}
+.monitor-dots{display:flex;gap:6px;flex-shrink:0}
+.monitor-dot{width:11px;height:11px;border-radius:50%}
+.monitor-dot.red{background:#ff5f57}
+.monitor-dot.yellow{background:#febc2e}
+.monitor-dot.green{background:#28c840}
 .monitor-urlbar{
   flex:1;
-  background:rgba(0,181,173,0.07);
-  border:1px solid rgba(0,181,173,0.15);
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.1);
   border-radius:6px;
-  padding:4px 12px;
-  font-size:11px;
-  color:rgba(0,181,173,0.55);
+  padding:5px 14px;
+  font-size:12px;
+  color:rgba(255,255,255,0.4);
   text-align:center;
   font-family:monospace;
   letter-spacing:.3px;
 }
 .monitor-live-badge{
-  font-size:9px;font-weight:700;
+  font-size:10px;font-weight:700;
   color:#00B5AD;
   background:rgba(0,181,173,0.1);
-  padding:3px 8px;border-radius:4px;
+  padding:4px 10px;border-radius:5px;
   border:1px solid rgba(0,181,173,0.3);
-  letter-spacing:.5px;
+  letter-spacing:.8px;
   flex-shrink:0;
 }
 .monitor-content{
   position:relative;
-  background:#000;
-  overflow:visible;
+  background:#fff;
 }
 .monitor-content img{
   display:block;
@@ -1211,16 +1195,12 @@ function renderStep(){
     const doScroll = () => {
       const img = document.getElementById("player-img");
       const imgHeight = img.offsetHeight;
-      const hotspotTop = (h.y / 100) * imgHeight;
-      const monitorWrap = document.querySelector(".monitor-wrap");
+      // 52px fixed header + ~48px topbar
+      const topOffset = 100;
+      const hotspotAbsolute = topOffset + (h.y / 100) * imgHeight;
       const viewportH = window.innerHeight;
-      // Account for monitor topbar (~52px header + 36px topbar + 32px padding)
-      const offset = 120;
-      const scrollTarget = hotspotTop - (viewportH / 2) + offset;
-      if(monitorWrap){
-        monitorWrap.scrollTo({ top: Math.max(0, scrollTarget), behavior: "smooth" });
-      }
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      const scrollTarget = hotspotAbsolute - (viewportH / 2);
+      window.scrollTo({ top: Math.max(0, scrollTarget), behavior: "smooth" });
     };
 
     if(slideChanged){
