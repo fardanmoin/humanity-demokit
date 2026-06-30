@@ -1244,24 +1244,33 @@ function renderStep(){
       const imgRect = img.getBoundingClientRect();
       const fixedX = imgRect.left + (h.x/100) * imgRect.width;
       const fixedY = imgRect.top  + (h.y/100) * imgRect.height;
-      // Clamp hotspot inside viewport
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      hotEl.style.left = Math.min(Math.max(fixedX, 20), vw-20) + "px";
-      hotEl.style.top  = Math.min(Math.max(fixedY, 80), vh-20) + "px";
+      // Monitor scroll visible bounds — keep hotspot inside the screen area
+      const scRect = scroller.getBoundingClientRect();
+      const clampedX = Math.min(Math.max(fixedX, scRect.left+10), scRect.right-10);
+      const clampedY = Math.min(Math.max(fixedY, scRect.top+10), scRect.bottom-10);
+      hotEl.style.left = clampedX + "px";
+      hotEl.style.top  = clampedY + "px";
 
-      // Smart tooltip flip based on actual fixed position
+      // Smart tooltip flip — pick the side with the most room
       const tbEl = document.getElementById("tooltip-box");
       if(!tbEl) return;
-      const tw = 300; const th = 220;
-      const hx = parseFloat(hotEl.style.left);
-      const hy = parseFloat(hotEl.style.top);
+      const tw = 300; const th = 230;
+      const hx = clampedX;
+      const hy = clampedY;
+      const roomRight = vw - hx;
+      const roomLeft = hx;
+      const roomBelow = vh - hy;
+      const roomAbove = hy;
       let pos = h.position || "right";
-      if(pos==="right"  && hx + tw + 60 > vw) pos = "left";
-      if(pos==="left"   && hx - tw - 60 < 0)  pos = "right";
-      if(pos==="bottom" && hy + th + 60 > vh)  pos = "top";
-      if(hy + th + 60 > vh) pos = "top";
-      if(hy - th - 60 < 80 && pos==="top") pos = "bottom";
+      // Vertical first: if not enough room below for a bottom tooltip, go top
+      if((pos==="bottom") && roomBelow < th+40) pos = "top";
+      if((pos==="top") && roomAbove < th+40) pos = "bottom";
+      // Horizontal: right/left based on room
+      if(pos==="right" && roomRight < tw+40) pos = "left";
+      if(pos==="left" && roomLeft < tw+40) pos = "right";
+      // Final safety: if a side tooltip would overflow vertically centered, nudge
       tbEl.className = "tooltip-box pos-"+pos;
     };
     positionHotspotGlobal = positionHotspot;
