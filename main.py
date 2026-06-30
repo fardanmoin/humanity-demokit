@@ -532,5 +532,11 @@ def serve_admin():
     return FileResponse(INDEX)
 
 @app.get("/")
+@app.head("/")
 def serve_root():
     return FileResponse(INDEX)
+
+@app.get("/ping")
+@app.head("/ping")
+def ping():
+    return {"status": "alive"}
