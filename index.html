@@ -1274,6 +1274,10 @@ function renderStep(){
     };
     positionHotspotGlobal = positionHotspot;
     positionHotspot();
+    // Re-run after layout settles (image render, scroll animation)
+    requestAnimationFrame(positionHotspot);
+    setTimeout(positionHotspot, 100);
+    setTimeout(positionHotspot, 400);
     const scroller2 = document.getElementById("monitor-scroll");
     if(scroller2){
       scroller2._hotspotHandler && scroller2.removeEventListener("scroll", scroller2._hotspotHandler);
