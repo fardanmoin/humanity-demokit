@@ -413,8 +413,8 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 }
 /* Scrollable inner screen */
 .monitor-scroll{
-  height:calc(100vh - 185px);
-  overflow-y:scroll;
+  max-height:calc(100vh - 185px);
+  overflow-y:auto;
   overflow-x:hidden;
   position:relative;
   background:#fff;
@@ -1140,26 +1140,11 @@ function errPage(msg){
 
 
 function fitImageToFrame(img){
-  const scroller = document.getElementById("monitor-scroll");
-  if(!scroller || !img) return;
-  // Reset to natural width first
+  // Image always fills full width at natural aspect ratio.
+  // The scroll container sizes to fit or scrolls if taller than max.
+  if(!img) return;
   img.style.width = "100%";
   img.style.height = "auto";
-  // Wait a frame for layout
-  requestAnimationFrame(()=>{
-    const containerH = scroller.clientHeight;
-    const imgH = img.offsetHeight;
-    if(imgH < containerH){
-      // Image is shorter than frame — scale it up to fill height
-      const scale = containerH / imgH;
-      img.style.width = (100 * scale) + "%";
-      img.style.height = "auto";
-    } else {
-      // Image taller — keep full width, it will scroll
-      img.style.width = "100%";
-      img.style.height = "auto";
-    }
-  });
 }
 
 let positionHotspotGlobal = null;
