@@ -1164,6 +1164,20 @@ function fitImageToFrame(img){
 
 let positionHotspotGlobal = null;
 
+// Reposition hotspot on window resize AND zoom (zoom triggers resize)
+window.addEventListener("resize", function(){
+  if(positionHotspotGlobal) positionHotspotGlobal();
+});
+// Visual viewport handles pinch-zoom and browser zoom more accurately
+if(window.visualViewport){
+  window.visualViewport.addEventListener("resize", function(){
+    if(positionHotspotGlobal) positionHotspotGlobal();
+  });
+  window.visualViewport.addEventListener("scroll", function(){
+    if(positionHotspotGlobal) positionHotspotGlobal();
+  });
+}
+
 let prevSlideIndex = -1;
 let sessionId = null;
 let stepStartTime = null;
