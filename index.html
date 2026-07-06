@@ -625,8 +625,11 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
             </div>
           </div>
 
-          <div style="margin-top:16px">
+          <div id="edit-banner" style="display:none;background:#fff7ed;border:1px solid #fdba74;color:#9a3412;padding:10px 14px;border-radius:8px;font-size:13px;margin-top:12px">Editing an existing slide. Click the screenshot to add hotspots, drag details below, then Save Changes.</div>
+          <div style="margin-top:16px;display:flex;gap:10px">
             <button class="btn-primary" onclick="addSlide()" id="btn-add-slide" style="display:none">Add Slide</button>
+            <button class="btn-primary" onclick="saveSlideHotspots()" id="btn-save-hotspots" style="display:none">Save Changes</button>
+            <button class="btn-secondary" onclick="cancelSlideEdit()" id="btn-cancel-edit" style="display:none">Cancel</button>
           </div>
           <div id="slide-msg"></div>
         </div>
@@ -817,6 +820,14 @@ function selectProduct(p){
 // ── SLIDE TYPE ──
 function setSlideType(t){
   selectedSlideType=t;
+  if(!editingSlideId){
+    const bs=document.getElementById("btn-save-hotspots");
+    const bc=document.getElementById("btn-cancel-edit");
+    const eb=document.getElementById("edit-banner");
+    if(bs) bs.style.display="none";
+    if(bc) bc.style.display="none";
+    if(eb) eb.style.display="none";
+  }
   document.getElementById("stt-desktop").className="stt-btn"+(t==="desktop"?" active":"");
   document.getElementById("stt-mobile").className="stt-btn"+(t==="mobile"?" active":"");
   document.getElementById("slide-file-label").textContent=t==="mobile"?"Mobile App Screenshot (PNG/JPG)":"Desktop Screenshot (PNG/JPG)";
@@ -843,9 +854,40 @@ async function loadDemosList(){
         <p style="font-size:12px;color:var(--gtext)">${d.description||"No description"}</p>
         <a class="demo-link" href="/share/${d.slug}" target="_blank">/share/${d.slug}</a>
       </div>
-      <button class="btn-danger" onclick="deleteDemo('${d.slug}')">Delete</button>
+      <div style="display:flex;gap:8px;flex-shrink:0">
+        <button class="btn-secondary" onclick="duplicateDemo('${d.slug}')" style="font-size:12px;padding:6px 14px">Duplicate</button>
+        <button class="btn-danger" onclick="deleteDemo('${d.slug}')">Delete</button>
+      </div>
     </div>`
   }).join("");
+}
+
+async function duplicateDemo(slug){
+  const res0=await fetch(API+"/api/demos/"+slug);
+  if(!res0.ok){alert("Could not load demo.");return}
+  const d=await res0.json();
+  const newTitle=prompt("Title for the copy:", d.title+" Copy");
+  if(newTitle===null) return;
+  let newSlug=prompt("URL slug for the copy (no spaces):", slug+"-copy");
+  if(newSlug===null) return;
+  newSlug=newSlug.trim().toLowerCase().replace(/\s+/g,"-");
+  const cal=prompt("Calendar link for this copy (paste your colleague's booking link):", d.calendar_link||"");
+  if(cal===null) return;
+  const repName=prompt("Name shown on the end screen:", d.rep_name||"Aaron Jose");
+  if(repName===null) return;
+  const repTitle=prompt("Title shown on the end screen:", d.rep_title||"Senior Account Executive");
+  if(repTitle===null) return;
+  const res=await fetch(API+"/api/demos/"+slug+"/duplicate",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({new_slug:newSlug,new_title:newTitle,calendar_link:cal,rep_name:repName,rep_title:repTitle})
+  });
+  if(res.ok){
+    alert("Demo duplicated! New link: "+window.location.origin+"/share/"+newSlug);
+    loadDemosList();
+  } else {
+    const e=await res.json().catch(()=>({detail:"Error"}));
+    alert("Failed: "+(e.detail||"Error"));
+  }
 }
 
 async function deleteDemo(slug){
@@ -908,7 +950,8 @@ async function loadSlidesForDemo(){
   document.getElementById("slides-list-card").style.display="block";
   const res=await fetch(API+"/api/demos/"+currentDemoSlug);
   const demo=await res.json();
-  renderSlidesList(demo.slides||[]);
+  currentSlidesData=demo.slides||[];
+  renderSlidesList(currentSlidesData);
   renderAppShots(demo.app_screenshots||[]);
 }
 
@@ -932,6 +975,7 @@ function renderSlidesList(slides){
           <button class="reorder-btn" onclick="moveSlide(${i},-1,${JSON.stringify(slides.map(x=>x.id)).replace(/"/g,"'")})" ${i===0?"disabled":""}>↑</button>
           <button class="reorder-btn" onclick="moveSlide(${i},1,${JSON.stringify(slides.map(x=>x.id)).replace(/"/g,"'")})" ${i===slides.length-1?"disabled":""}>↓</button>
         </div>
+        <button class="btn-secondary" onclick="editSlide(${s.id})" style="font-size:12px;padding:6px 12px">Edit</button>
         <button class="btn-danger" onclick="deleteSlide(${s.id})">Remove</button>
       </div>`
     }).join("")}
@@ -939,8 +983,60 @@ function renderSlidesList(slides){
 }
 
 async function deleteSlide(id){
+  if(!confirm("Remove this slide?")) return;
   await fetch(API+"/api/slides/"+id,{method:"DELETE"});
   loadSlidesForDemo();
+}
+
+let editingSlideId=null;
+let currentSlidesData=[];
+
+function editSlide(id){
+  const s=currentSlidesData.find(x=>x.id===id);
+  if(!s) return;
+  editingSlideId=id;
+  setSlideType(s.slide_type||"desktop");
+  document.getElementById("preview-img").src=s.image_data;
+  document.getElementById("img-picker-container").style.display="block";
+  pendingHotspots=JSON.parse(JSON.stringify(s.hotspots||[]));
+  renderPickerDots();renderHotspotEntries();
+  document.getElementById("btn-add-slide").style.display="none";
+  document.getElementById("btn-save-hotspots").style.display="inline-block";
+  document.getElementById("btn-cancel-edit").style.display="inline-block";
+  document.getElementById("edit-banner").style.display="block";
+  document.getElementById("slide-form-card").scrollIntoView({behavior:"smooth"});
+}
+
+function cancelSlideEdit(){
+  editingSlideId=null;
+  pendingHotspots=[];
+  document.getElementById("img-picker-container").style.display="none";
+  document.getElementById("btn-save-hotspots").style.display="none";
+  document.getElementById("btn-cancel-edit").style.display="none";
+  document.getElementById("edit-banner").style.display="none";
+  document.getElementById("slide-file").value="";
+}
+
+async function saveSlideHotspots(){
+  if(!editingSlideId) return;
+  if(!pendingHotspots.length){showMsg("slide-msg","Add at least one hotspot by clicking the screenshot.","error");return}
+  for(let i=0;i<pendingHotspots.length;i++){
+    if(!pendingHotspots[i].title.trim()||!pendingHotspots[i].body.trim()){
+      showMsg("slide-msg",`Fill in title and body for Hotspot ${i+1}.`,"error");return
+    }
+  }
+  const btn=document.getElementById("btn-save-hotspots");
+  btn.innerHTML='<span class="spinner"></span>Saving...';btn.disabled=true;
+  const res=await fetch(API+"/api/slides/"+editingSlideId+"/hotspots",{
+    method:"PUT",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({hotspots:pendingHotspots})
+  });
+  btn.innerHTML="Save Changes";btn.disabled=false;
+  if(res.ok){
+    showMsg("slide-msg","Slide updated!","success");
+    cancelSlideEdit();
+    loadSlidesForDemo();
+  } else showMsg("slide-msg","Update failed.","error");
 }
 
 async function moveSlide(idx, dir, ids){
@@ -994,6 +1090,10 @@ async function deleteAppShot(idx){
 function previewImage(){
   const file=document.getElementById("slide-file").files[0];
   if(!file) return;
+  editingSlideId=null;
+  document.getElementById("btn-save-hotspots").style.display="none";
+  document.getElementById("btn-cancel-edit").style.display="none";
+  document.getElementById("edit-banner").style.display="none";
   const reader=new FileReader();
   reader.onload=e=>{
     document.getElementById("preview-img").src=e.target.result;
