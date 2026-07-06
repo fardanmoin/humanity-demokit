@@ -352,6 +352,71 @@ def get_gate_leads_by_slug(slug: str):
     cur.close(); conn.close()
     return rows
 
+
+class SlideHotspotsUpdate(BaseModel):
+    hotspots: List[dict]
+
+@app.put("/api/slides/{slide_id}/hotspots")
+def update_slide_hotspots(slide_id: int, body: SlideHotspotsUpdate):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("UPDATE slides SET hotspots=%s WHERE id=%s", (json.dumps(body.hotspots), slide_id))
+    conn.commit()
+    cur.close(); conn.close()
+    return {"updated": slide_id}
+
+class DemoDuplicate(BaseModel):
+    new_slug: str
+    new_title: Optional[str] = None
+    calendar_link: Optional[str] = None
+    rep_name: Optional[str] = None
+    rep_title: Optional[str] = None
+
+@app.post("/api/demos/{slug}/duplicate")
+def duplicate_demo(slug: str, body: DemoDuplicate):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM demos WHERE slug=%s", (slug,))
+    demo = cur.fetchone()
+    if not demo:
+        cur.close(); conn.close()
+        raise HTTPException(status_code=404, detail="Demo not found")
+    demo = dict(demo)
+    shots = demo.get("app_screenshots") or []
+    if isinstance(shots, str):
+        shots = json.loads(shots)
+    try:
+        cur.execute(
+            """INSERT INTO demos (slug, title, description, product, calendar_link, rep_name, rep_title, app_screenshots)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id""",
+            (body.new_slug,
+             body.new_title or (demo["title"] + " Copy"),
+             demo.get("description") or "",
+             demo.get("product") or "humanity",
+             body.calendar_link or demo.get("calendar_link"),
+             body.rep_name or demo.get("rep_name"),
+             body.rep_title or demo.get("rep_title"),
+             json.dumps(shots))
+        )
+        new_id = cur.fetchone()["id"]
+    except psycopg2.errors.UniqueViolation:
+        conn.rollback()
+        cur.close(); conn.close()
+        raise HTTPException(status_code=400, detail="Slug already exists")
+    cur.execute("SELECT position, image_data, hotspots, slide_type FROM slides WHERE demo_id=%s ORDER BY position ASC", (demo["id"],))
+    for s in cur.fetchall():
+        s = dict(s)
+        hs = s["hotspots"]
+        if not isinstance(hs, str):
+            hs = json.dumps(hs)
+        cur.execute(
+            "INSERT INTO slides (demo_id, position, image_data, hotspots, slide_type) VALUES (%s,%s,%s,%s,%s)",
+            (new_id, s["position"], s["image_data"], hs, s["slide_type"])
+        )
+    conn.commit()
+    cur.close(); conn.close()
+    return {"ok": True, "new_slug": body.new_slug}
+
 @app.get("/api/health")
 def health():
     return {"status": "ok", "pil": HAS_PIL}
