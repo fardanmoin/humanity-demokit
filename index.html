@@ -503,6 +503,47 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
         <h2>All Demos</h2>
         <div id="demos-list"><p style="color:var(--gtext);font-size:13px">Loading...</p></div>
       </div>
+
+      <div class="admin-card">
+        <h2>🔗 Tracked Link Generator</h2>
+        <p style="font-size:13px;color:var(--gtext);margin-bottom:16px">Generate a unique tracked link per prospect. Use <code style="background:#f0f0f0;padding:2px 6px;border-radius:4px;font-size:12px">{{firstName}}_{{lastName}}</code> style variables in Apollo or Instantly, or generate one manually here.</p>
+        <div class="form-grid">
+          <div class="form-row">
+            <label>Select Demo</label>
+            <select id="gen-demo-select">
+              <option value="">-- Select demo --</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Prospect Email</label>
+            <input type="email" id="gen-src" placeholder="e.g. john.smith@acmehospital.com"/>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="generateLink()" style="margin-bottom:12px">Generate Link</button>
+        <div id="gen-result" style="display:none">
+          <div style="background:#f8fafc;border:1px solid var(--gborder);border-radius:8px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px">
+            <code id="gen-link-text" style="font-size:13px;color:#000;word-break:break-all;flex:1"></code>
+            <button class="btn-secondary" onclick="copyGenLink()" style="flex-shrink:0;font-size:12px">Copy</button>
+          </div>
+          <p style="font-size:12px;color:var(--gtext)">📧 For Apollo/Instantly: append <code style="background:#f0f0f0;padding:2px 6px;border-radius:4px">?email={{"{{"}}email{{"}}"}}</code> to your demo URL. Each prospect gets tracked by their exact email address.</p>
+        </div>
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--gborder)">
+          <p style="font-size:12px;font-weight:600;color:#000;margin-bottom:8px">Apollo / Instantly template examples:</p>
+          <div id="gen-templates" style="display:none">
+            <div style="background:#f8fafc;border:1px solid var(--gborder);border-radius:8px;padding:12px 16px;margin-bottom:8px">
+              <p style="font-size:11px;font-weight:700;color:var(--gtext);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Apollo.io</p>
+              <code id="apollo-template" style="font-size:12px;color:#000;word-break:break-all"></code>
+              <button onclick="copyTemplate('apollo-template')" class="btn-secondary" style="font-size:11px;padding:4px 10px;margin-top:6px;display:block">Copy</button>
+            </div>
+            <div style="background:#f8fafc;border:1px solid var(--gborder);border-radius:8px;padding:12px 16px">
+              <p style="font-size:11px;font-weight:700;color:var(--gtext);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Instantly / Smartlead</p>
+              <code id="instantly-template" style="font-size:12px;color:#000;word-break:break-all"></code>
+              <button onclick="copyTemplate('instantly-template')" class="btn-secondary" style="font-size:11px;padding:4px 10px;margin-top:6px;display:block">Copy</button>
+            </div>
+          </div>
+          <button class="btn-secondary" onclick="showTemplates()" id="btn-show-templates" style="font-size:12px">Show Outreach Templates</button>
+        </div>
+      </div>
     </div>
 
     <!-- CREATE -->
@@ -737,7 +778,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var
 
 <script>
 const API = window.location.origin;
-const ADMIN_PASSWORD = "Aaron17";
+const ADMIN_PASSWORD = "tcp2024admin";
 const HOTSPOT_COLORS = ["#00B5AD","#FF6B35","#6366F1","#F59E0B","#10B981","#EF4444"];
 
 let demoData = null;
@@ -805,7 +846,7 @@ function switchTab(id,btn){
   document.querySelectorAll(".tab-content").forEach(t=>t.classList.remove("active"));
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   document.getElementById(id).classList.add("active");btn.classList.add("active");
-  if(id==="tab-demos") loadDemosList();
+  if(id==="tab-demos"){loadDemosList();populateLinkGenSelect();}
   if(id==="tab-slides") populateDemoSelect();
   if(id==="tab-analytics"){populateAnalyticsFilter();loadAnalytics();loadEngagement();}
 }
@@ -1231,7 +1272,7 @@ async function loadDemo(slug){
     renderStep();
 
     // Track visitor + get IP info
-    fetch(API+"/api/analytics/track?slug="+slug+"&user_agent="+encodeURIComponent(navigator.userAgent)+"&referer="+encodeURIComponent(document.referrer),{method:"POST"})
+    fetch(API+"/api/analytics/track?slug="+slug+"&user_agent="+encodeURIComponent(navigator.userAgent)+"&referer="+encodeURIComponent(document.referrer)+"&src="+encodeURIComponent(srcParam),{method:"POST"})
       .then(r=>r.json()).then(d=>{
         if(d && d.ip){ sessionIp=d.ip||""; sessionCompany=d.as_name||""; sessionDomain=d.as_domain||""; }
       }).catch(()=>{});
@@ -1269,6 +1310,8 @@ if(window.visualViewport){
 
 let prevSlideIndex = -1;
 let sessionId = null;
+const _urlp = new URLSearchParams(window.location.search);
+let srcParam = _urlp.get("email") || _urlp.get("src") || "";
 let stepStartTime = null;
 let sessionIp = "";
 let sessionCompany = "";
@@ -1286,7 +1329,8 @@ function trackEvent(event, extra){
     ip: sessionIp,
     as_name: sessionCompany,
     as_domain: sessionDomain,
-    event: event
+    event: event,
+    src: srcParam
   }, extra||{});
   fetch(API+"/api/engagement", {
     method:"POST",
@@ -1683,7 +1727,7 @@ async function loadEngagement(){
 
   let tbl = "<div style='overflow-x:auto'><table style='width:100%;border-collapse:collapse;font-size:13px'>";
   tbl += "<thead><tr style='border-bottom:2px solid var(--gborder)'>";
-  ["Company","Demo","Steps Reached","Progress","Completed","Booked","Time Spent","Last Seen"].forEach(h=>{
+  ["Prospect / Source","Company","Demo","Steps Reached","Progress","Completed","Booked","Time Spent","Last Seen"].forEach(h=>{
     tbl += "<th style='text-align:left;padding:10px 12px;color:var(--gtext);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px'>"+h+"</th>";
   });
   tbl += "</tr></thead><tbody>";
@@ -1704,8 +1748,11 @@ async function loadEngagement(){
 
     var progressBar = "<div style='width:100px;background:#e5e7eb;border-radius:20px;height:6px;overflow:hidden'><div style='width:"+pct+"%;background:"+(pct>=100?"#00B5AD":pct>50?"#2563EB":"#FF6B35")+";height:100%;border-radius:20px'></div></div><div style='font-size:10px;color:var(--gtext);margin-top:2px'>"+maxStep+" of "+total+"</div>";
 
+    var srcVal = r.src || "";
+    var isEmail = srcVal.indexOf("@") > -1;
+    var srcBadge = srcVal ? "<div style='background:"+(isEmail?"#dcfce7;color:#166534":"#dbeafe;color:#1e40af")+";font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;display:inline-block;margin-bottom:3px'>"+(isEmail?"✉ ":"")+srcVal+"</div><br>" : "";
     tbl += "<tr style='border-bottom:1px solid var(--gborder);background:"+bg+"'>";
-    tbl += "<td style='padding:11px 12px;font-weight:600;color:#000'>"+company+"</td>";
+    tbl += "<td style='padding:11px 12px;font-weight:600;color:#000'>"+srcBadge+company+"</td>";
     tbl += "<td style='padding:11px 12px'><span style='background:#f0f0f0;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600'>"+demo+"</span></td>";
     tbl += "<td style='padding:11px 12px;color:var(--gtext)'>"+steps+"</td>";
     tbl += "<td style='padding:11px 12px'>"+progressBar+"</td>";
@@ -1777,6 +1824,8 @@ async function submitGate(){
   closeGate();
   // Now open calendar
   if(pendingCalendarLink) window.open(pendingCalendarLink, "_blank");
+  // Also tag session with email if gate email matches src
+  if(gateEmail && !srcParam) srcParam = gateEmail;
 }
 
 function skipGate(){
@@ -1786,6 +1835,61 @@ function skipGate(){
 
 function closeGate(){
   document.getElementById("demo-gate").classList.remove("show");
+}
+
+
+async function populateLinkGenSelect(){
+  const res = await fetch(API+"/api/demos");
+  const demos = await res.json();
+  const sel = document.getElementById("gen-demo-select");
+  if(!sel) return;
+  sel.innerHTML = '<option value="">-- Select demo --</option>' +
+    demos.map(d=>`<option value="${d.slug}">${d.title}</option>`).join("");
+}
+
+function generateLink(){
+  const slug = document.getElementById("gen-demo-select").value;
+  const src = document.getElementById("gen-src").value.trim().replace(/\s+/g,"_");
+  if(!slug){ alert("Select a demo first."); return; }
+  const base = window.location.origin + "/share/" + slug;
+  const link = src ? base + "?email=" + encodeURIComponent(src) : base;
+  document.getElementById("gen-link-text").textContent = link;
+  document.getElementById("gen-result").style.display = "block";
+  // Also update templates
+  const apolloLink = base + "?email={{email}}";
+  const instantlyLink = base + "?email={{prospect.email}}";
+  document.getElementById("apollo-template").textContent = apolloLink;
+  document.getElementById("instantly-template").textContent = instantlyLink;
+}
+
+function copyGenLink(){
+  const text = document.getElementById("gen-link-text").textContent;
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn = event.target;
+    btn.textContent = "Copied!";
+    setTimeout(()=>btn.textContent="Copy", 2000);
+  });
+}
+
+function copyTemplate(id){
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn = event.target;
+    btn.textContent = "Copied!";
+    setTimeout(()=>btn.textContent="Copy", 2000);
+  });
+}
+
+function showTemplates(){
+  document.getElementById("gen-templates").style.display = "block";
+  document.getElementById("btn-show-templates").style.display = "none";
+  // Populate if a demo is already selected
+  const slug = document.getElementById("gen-demo-select").value;
+  if(slug){
+    const base = window.location.origin + "/share/" + slug;
+    document.getElementById("apollo-template").textContent = base + "?src={{first_name}}_{{last_name}}";
+    document.getElementById("instantly-template").textContent = base + "?src={{firstName}}_{{lastName}}";
+  }
 }
 
 route();
