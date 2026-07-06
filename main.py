@@ -50,6 +50,7 @@ def init_db():
             continent TEXT,
             user_agent TEXT,
             referer TEXT,
+            src TEXT,
             visited_at TIMESTAMP DEFAULT NOW()
         );
         CREATE TABLE IF NOT EXISTS gate_leads (
@@ -76,6 +77,7 @@ def init_db():
             total_steps INTEGER,
             slide_index INTEGER,
             time_on_step INTEGER,
+            src TEXT,
             created_at TIMESTAMP DEFAULT NOW()
         );
     """)
@@ -89,6 +91,8 @@ def init_db():
         "CREATE TABLE IF NOT EXISTS gate_leads (id SERIAL PRIMARY KEY, demo_slug TEXT NOT NULL, name TEXT, email TEXT, company TEXT, ip TEXT, as_name TEXT, as_domain TEXT, submitted_at TIMESTAMP DEFAULT NOW())",
         "CREATE TABLE IF NOT EXISTS engagement (id SERIAL PRIMARY KEY, session_id TEXT NOT NULL, demo_slug TEXT NOT NULL, ip TEXT, as_name TEXT, as_domain TEXT, event TEXT NOT NULL, step_index INTEGER, step_title TEXT, total_steps INTEGER, slide_index INTEGER, time_on_step INTEGER, created_at TIMESTAMP DEFAULT NOW())",
         "ALTER TABLE demos ADD COLUMN IF NOT EXISTS rep_name TEXT NOT NULL DEFAULT 'Aaron Jose'",
+        "ALTER TABLE analytics ADD COLUMN IF NOT EXISTS src TEXT",
+        "ALTER TABLE engagement ADD COLUMN IF NOT EXISTS src TEXT",
         "ALTER TABLE demos ADD COLUMN IF NOT EXISTS rep_title TEXT NOT NULL DEFAULT 'Senior Account Executive'",
     ]
     for m in migrations:
@@ -160,22 +164,22 @@ async def lookup_ip(ip: str) -> dict:
     return {}
 
 @app.post("/api/analytics/track")
-async def track_visit(request: Request, slug: str, user_agent: str = "", referer: str = ""):
+async def track_visit(request: Request, slug: str, user_agent: str = "", referer: str = "", src: str = ""):
     ip = request.headers.get("x-forwarded-for", request.client.host or "").split(",")[0].strip()
     info = await lookup_ip(ip)
     conn = get_conn()
     cur = conn.cursor()
     cur.execute(
-        """INSERT INTO analytics (demo_slug, ip, as_name, as_domain, country, continent, user_agent, referer)
-           VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
+        """INSERT INTO analytics (demo_slug, ip, as_name, as_domain, country, continent, user_agent, referer, src)
+           VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
         (slug, ip,
          info.get("as_name",""), info.get("as_domain",""),
          info.get("country",""), info.get("continent",""),
-         user_agent[:300], referer[:300])
+         user_agent[:300], referer[:300], src[:200] if src else "")
     )
     conn.commit()
     cur.close(); conn.close()
-    return {"ok": True, "ip": ip, "as_name": info.get("as_name",""), "as_domain": info.get("as_domain","")}
+    return {"ok": True, "ip": ip, "as_name": info.get("as_name",""), "as_domain": info.get("as_domain",""), "src": src}
 
 @app.get("/api/analytics/{slug}")
 def get_analytics(slug: str):
@@ -230,6 +234,7 @@ class EngagementEvent(BaseModel):
     total_steps: Optional[int] = None
     slide_index: Optional[int] = None
     time_on_step: Optional[int] = None
+    src: Optional[str] = ""
 
 @app.post("/api/engagement")
 def track_engagement(e: EngagementEvent):
@@ -237,10 +242,10 @@ def track_engagement(e: EngagementEvent):
     cur = conn.cursor()
     cur.execute(
         """INSERT INTO engagement
-           (session_id, demo_slug, ip, as_name, as_domain, event, step_index, step_title, total_steps, slide_index, time_on_step)
-           VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+           (session_id, demo_slug, ip, as_name, as_domain, event, step_index, step_title, total_steps, slide_index, time_on_step, src)
+           VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
         (e.session_id, e.demo_slug, e.ip, e.as_name, e.as_domain,
-         e.event, e.step_index, e.step_title, e.total_steps, e.slide_index, e.time_on_step)
+         e.event, e.step_index, e.step_title, e.total_steps, e.slide_index, e.time_on_step, e.src or "")
     )
     conn.commit()
     cur.close(); conn.close()
@@ -257,6 +262,7 @@ def get_engagement(slug: str):
             MAX(as_name) as company,
             MAX(as_domain) as domain,
             MAX(ip) as ip,
+            MAX(src) as src,
             COUNT(CASE WHEN event='step_view' THEN 1 END) as steps_viewed,
             MAX(total_steps) as total_steps,
             MAX(CASE WHEN event='step_view' THEN step_index END) as max_step,
@@ -288,6 +294,7 @@ def get_all_engagement():
             session_id,
             MAX(as_name) as company,
             MAX(as_domain) as domain,
+            MAX(src) as src,
             COUNT(CASE WHEN event='step_view' THEN 1 END) as steps_viewed,
             MAX(total_steps) as total_steps,
             MAX(CASE WHEN event='step_view' THEN step_index END) as max_step,
